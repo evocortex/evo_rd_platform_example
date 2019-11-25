@@ -1,0 +1,38 @@
+---
+Language: Cpp
+BinPackArguments: true
+BinPackParameters: true
+AlignConsecutiveAssignments: true
+AlignTrailingComments: true
+AccessModifierOffset: -2
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Inline
+AlwaysBreakTemplateDeclarations: true
+AllowShortBlocksOnASingleLine: true
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
+SpaceAfterCStyleCast: true
+SpaceAfterTemplateKeyword: false
+SortIncludes: false
+SpaceBeforeParens: Never
+IndentWidth: '3'
+MaxEmptyLinesToKeep: '1'
+PointerAlignment: Left
+UseTab: Never
+BreakConstructorInitializers: AfterColon
+BreakBeforeBraces: Custom
+ColumnLimit: 85
+BraceWrapping:
+ AfterClass: true
+ AfterControlStatement: true
+ AfterEnum: true
+ AfterFunction: true
+ AfterNamespace: false
+ AfterStruct: true
+ AfterUnion: true
+ AfterExternBlock: true
+ BeforeElse: true
+ SplitEmptyNamespace: false
+ SplitEmptyRecord: false
+ SplitEmptyFunction: false
+...

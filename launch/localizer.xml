@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Example Configuration File for evo-localizer Software -->
+<config>
+
+  <!-- Amount of Particles -->
+  <max_count_particles>7000</max_count_particles>
+  
+  <!-- Initial Variance for Initialization at Pose -->
+  <init_var_trans>2.0</init_var_trans> <!-- Translational (x in meter, y in meter) -->
+  <init_var_phi>0.4</init_var_phi> <!-- Rotational (yaw in rad) -->
+  
+  <!-- Settings of Probability Map -->
+  <distance_transform_offset>3.0</distance_transform_offset> <!-- distance -->
+  <distance_transform_exponent>4</distance_transform_exponent> <!-- exponent -->
+
+  <!-- Motion Configuration -->
+  <motion>
+    <model>OMNI</model>  <!-- OMNI: Omnidirectional Drive, DIFF: Differential Drive -->
+    <a1>0.0</a1> <!-- diff: rot error from rot motion; omni: x error from x motion -->
+    <a2>0.0</a2> <!-- diff: rot error from trans motion; omni: y error from y motion -->
+    <a3>0.0</a3> <!-- diff: trans error from trans motion; omni: yaw error from yaw motion -->
+    <a4>0.0</a4> <!-- diff: trans error from rot motion; omni: not used -->
+  </motion>
+
+  <!-- Differential-Drive-Config example: 
+  <motion> 
+    <model>DIFF</model> 
+      <a1>0.05</a1> 
+      <a2>8.0</a2> 
+      <a3>1.5</a3> 
+      <a4>0.001</a4> 
+  </motion> -->
+
+  <!-- Controller Model -->
+  <controller>
+    <model>STD</model> <!-- STD: laser + movement, LASER_ONLY: laser -->
+    <resample_count>5</resample_count> <!-- measurements to integrate before resampling takes place -->
+    <min_tans_movement>0.0001</min_tans_movement> <!-- minimal translational movement to prevent accumulation of sensor noise -->
+    <min_rot_movement>0.0001</min_rot_movement> <!-- minimal rotational movement to prevent accumulation of sensor noise -->
+    <detect_movement_reactiveness>0.2</detect_movement_reactiveness> <!-- inertia of movement detection system -->  
+    <detect_movement_thresh>0.1</detect_movement_thresh> <!-- threshold of movement detection system -->
+    <boost_strength>3</boost_strength> 
+  </controller>
+
+  <!-- Resampler Configuration -->
+  <resampler>
+    <method>STD</method> <!-- STD: Standard resampling method (simple draw with replace); at the time, there is only one resampling method to choose -->
+    <additional_translational_noise>0.03</additional_translational_noise> <!-- additional translational noise at resampling -->
+    <additional_rotational_noise>0.03</additional_rotational_noise> <!-- additional translational noise at resampling -->
+  </resampler>
+
+  <!-- 2D-Laser Configurations -->
+  <laser>
+    <id>FRONT</id> <!-- id to distinguish between different scanners -->
+    <scan_rays_to_process>30</scan_rays_to_process> <!-- scan rays to process (subsampling) -->
+    <uncertainty>0.95</uncertainty> <!-- overall uncertainty of laser measurements from this laser -->
+  </laser>
+
+  <laser>
+    <id>BACK</id>
+    <scan_rays_to_process>30</scan_rays_to_process> 
+    <uncertainty>0.95</uncertainty>
+  </laser>
+
+</config>

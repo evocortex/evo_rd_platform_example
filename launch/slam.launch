@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<launch>
+
+    <include file="$(find evo_tsd_slam)/launch/slam.launch">
+        <arg name="map_topic" value="map" />    <!-- topic of occupancy grid -->
+        <arg name="pose_topic" value="pose" />    <!-- topic for robot's pose -->
+        <arg name="laser_topic" value="scan_front" />    <!-- topic to receive laser scan -->
+
+        <arg name="x_offset" value="0.0" />
+        <arg name="y_offset" value="0.0" />
+
+        <arg name="map_size" value="11" />
+        <arg name="cellsize" value="0.03" />
+        <arg name="truncation_radius" value="3" />
+
+        <arg name="min_range" value="0.3" />
+        <arg name="max_range" value="30.0" />
+
+        <arg name="tf_base_frame" value="map" />
+        <arg name="tf_child_frame" value="laser" />
+        <arg name="tf_footprint_frame" value="base_footprint_slam" />
+    </include>
+    
+    <node pkg="tf" type="static_transform_publisher" name="laser_front_base_footprint" args="-0.27257 0 0.07 0 0 0 1 laser_front base_footprint 2"/>
+    
+    <include file="$(find evo_rd_platform_example)/launch/sick_tim561_front.launch" />
+
+</launch>
+

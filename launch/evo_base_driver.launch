@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<launch>
+   <arg name="NodeName" default="EvoBaseController" />
+   <arg name="kp" 	default="0.1" />
+   <arg name="ki" 	default="2.8" />
+
+  <node name="$(arg NodeName)" pkg="evo_rd_platform_example" type="base_controller_node" output="screen" >
+    <param name="loop_rate_hz"       value="30.0"     />
+
+<!-- Publishers -->
+    <param name="topic_pub_odom"     value="odom"     />
+    <param name="topic_pub_enable_signal_off"     value="enable_signal_off"     />
+
+<!-- Subscribers -->
+    <param name="topic_sub_cmd_vel"     value="cmd_vel"     />
+    <param name="topic_sub_cmd_lift"     value="cmd_lift"     />
+
+<!-- enable tf -->
+    <param name="enable_odom_tf"       value="true" />
+    <param name="odom_frame_id"        value="odom" />
+    <param name="odom_child_frame_id"  value="base_footprint" />
+ 
+
+<!-- can interface -->
+    <param name="can_interface_name"   value="USBtin-ID-GOES-HERE" />
+
+<!-- behaviour timeouts -->
+    <param name="com_timeout_s"       value="0.1"     />
+    <param name="cmd_vel_timeout_s"   value="0.5"     />
+    <param name="cmd_lift_timeout_s"   value="0.5"     />
+
+<!-- base params -->
+    <param name="debug_motor_mapping"  		       value="false"      />
+    
+    <param name="wheel_radius_in_m"  		       value="0.05"      />
+    <param name="wheel_distance_front_back_in_m"       value="0.45"     />
+    <param name="wheel_distance_left_right_in_m"       value="0.4"     />
+
+<!-- covariances -->
+    <param name="covariance_pos_x"       value="1.0"     />
+    <param name="covariance_pos_y"       value="1.0"     />
+    <param name="covariance_pos_yaw"     value="1.0"     />
+    <param name="covariance_vel_x"       value="1.0"     />
+    <param name="covariance_vel_y"       value="1.0"     />
+    <param name="covariance_vel_yaw"     value="1.0"     />
+  </node>
+
+<!-- Motor Mapping drives: 0 = no_pos, 1=front_left, 2=front_right, 3=back_right, 4=back_left-->
+
+<group ns="$(arg NodeName)">
+  <group ns="ms1">
+    <param name="timeout_ms"              value="150"    />
+    	<param name="enable"              value="true"    />
+
+    <group ns="motor0">
+
+    	<param name="type"              value="2"    />
+    	<param name="ctrl_mode"       	value="2"    />
+    	<param name="kp"         	      value="$(arg kp)"  />
+    	<param name="ki" 		            value="$(arg ki)"  />
+    	<param name="kd" 		            value="0.0"    />
+    	<param name="pwm_limit"         value="100.0"  />
+    	<param name="gear_ratio"        value="22.4"  />
+    	<param name="encoder_res"       value="1024.0"  />
+    	<param name="motor_mapping"     value="3"  />
+    </group>
+
+    <group ns="motor1">
+
+    	<param name="type"              value="2"    />
+    	<param name="ctrl_mode"       	value="2"    />
+    	<param name="kp"         	      value="$(arg kp)"  />
+    	<param name="ki" 		            value="$(arg ki)"  />
+    	<param name="kd" 		            value="0.0"    />
+    	<param name="pwm_limit"         value="100.0"  />
+    	<param name="gear_ratio"        value="22.4"  />
+    	<param name="encoder_res"       value="1024.0"  />
+    	<param name="motor_mapping"     value="2"  />
+    </group>
+
+  </group>
+
+  <group ns="ms2">
+    <param name="timeout_ms"            value="150"    />
+    	<param name="enable"              value="true"    />
+
+    <group ns="motor0">
+
+    	<param name="type"              value="2"    />
+    	<param name="ctrl_mode"       	value="2"    />
+    	<param name="kp"         	      value="$(arg kp)"  />
+    	<param name="ki" 		            value="$(arg ki)"  />
+    	<param name="kd" 		            value="0.0"    />
+    	<param name="pwm_limit"         value="100.0"  />
+    	<param name="gear_ratio"        value="22.4"  />
+    	<param name="encoder_res"       value="1024.0"  />
+    	<param name="motor_mapping"     value="4"  />
+    </group>
+
+    <group ns="motor1">
+
+    	<param name="type"              value="2"    />
+    	<param name="ctrl_mode"       	value="2"    />
+    	<param name="kp"         	      value="$(arg kp)"  />
+    	<param name="ki" 		            value="$(arg ki)"  />
+    	<param name="kd" 		            value="0.0"    />
+    	<param name="pwm_limit"         value="100.0"  />
+    	<param name="gear_ratio"        value="22.4"  />
+    	<param name="encoder_res"       value="1024.0"  />
+    	<param name="motor_mapping"     value="1"  />
+    </group>
+
+  </group>
+  
+</group>  
+</launch>

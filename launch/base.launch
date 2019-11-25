@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+    <include file="$(find evo_rd_platform_example)/launch/tf_laser_mounts.launch" />
+    <include file="$(find evo_rd_platform_example)/launch/tf_body_dimensions.launch" />
+    <include file="$(find evo_rd_platform_example)/launch/sick_tim561_back.launch" />
+    <include file="$(find evo_rd_platform_example)/launch/sick_tim561_front.launch" />
+</launch>

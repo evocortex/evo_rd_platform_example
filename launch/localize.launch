@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+
+    <include file="$(find evo_localizer)/launch/localizer.launch" >
+        <arg name="output" value="screen" />
+        <arg name="frame_fixed" value="/map" />
+        <arg name="frame_odom" value="/odom" />
+        <arg name="frame_robot" value="/base_footprint" />
+        <arg name="frame_output" value="/pose_localizer" />
+        <arg name="path_config_file" value="$(find evo_rd_platform_example)/launch/localizer.xml" />
+        <arg name="subsampling_particles_for_gui" value="10" />
+        <arg name="laser_min_range_user" value="0.1" />
+        <arg name="laser_max_range_user" value="9.0" />
+        <arg name="top_particlecloud" value="/particlecloud" />
+        <arg name="top_probmap" value="/prob_map" />
+        <arg name="top_odometry" value="/odom" />
+        <arg name="top_set_pose" value="/initialpose" />
+        <arg name="top_global_localization" value="/clicked_point" />
+        <arg name="top_static_map" value="/static_map" />
+        <arg name="top_scan_1" value="/scan_front" />
+        <arg name="top_scan_2" value="/scan_back" />
+    </include>
+
+    <include file="$(find evo_rd_platform_example)/launch/tf_laser_mounts.launch" />
+
+    <include file="$(find evo_rd_platform_example)/launch/tf_body_dimensions.launch" />
+
+    <include file="$(find evo_rd_platform_example)/launch/sick_tim561_back.launch" />
+
+    <include file="$(find evo_rd_platform_example)/launch/sick_tim561_front.launch" />
+
+    <node name="map_server" pkg="map_server" type="map_server" args="/home/nvidia/map.yaml" />
+
+</launch>
+

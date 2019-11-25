@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>  
+
+<!-- base footprint to base_link (located on top of mounting plate) -->
+  <node pkg="tf" type="static_transform_publisher" name="base_footprint_base_link" args="0 0 0.200  0 0 0  base_footprint base_link 2"/>
+
+<!-- wheel corners -->
+  <node pkg="tf" type="static_transform_publisher" name="base_footprint_front_left"     args="0.22   0.20   0.0  0 0 0  base_footprint front_left_floor 2"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_footprint_front_right"    args="0.22   -0.20   0  0 0 0  base_footprint front_right_floor 2"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_footprint_back_left"      args="-0.22    0.20 0  0 0 0  base_footprint back_left_floor 2"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_footprint_back_right"     args="-0.22    -0.20 0  0 0 0  base_footprint back_right_floor 2"/>
+
+<!-- top corners -->
+
+  <node pkg="tf" type="static_transform_publisher" name="base_link_front_left"     args="0.24   0.20   0.0  0 0 0  base_link front_left 2"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_link_front_right"    args="0.24   -0.20   0  0 0 0  base_link front_right 2"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_link_back_left"      args="-0.24    0.20 0  0 0 0  base_link back_left 2"/>
+  <node pkg="tf" type="static_transform_publisher" name="base_link_back_right"     args="-0.24    -0.20 0  0 0 0  base_link back_right 2"/>
+</launch>

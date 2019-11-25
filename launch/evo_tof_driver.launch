@@ -1,0 +1,126 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="PI"   value="3.14159265"    />
+  <arg name="PI75" value="2.35619449019" />
+  <arg name="PI05" value="1.57079632679" />
+  <arg name="PI025" value="0.7853981634" />
+  <arg name="DEG8" value="0.13962634016" />
+  <arg name="DEG16" value="0.27925268032" />
+
+<!-- ToF Positions -->
+<!-- left side -->
+  <node pkg="tf" type="static_transform_publisher" name="base_link_ToF_sensorboard1" args="0.24 0.19 -0.01 $(arg PI025) -$(arg DEG16) 0 base_link ToF_sensorboard1 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard1_left" args="0 0.02 0.0  0 0 0  ToF_sensorboard1 ToF_sensorboard1_left 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard1_right" args="0 -0.02 0.0  0 0 0  ToF_sensorboard1 ToF_sensorboard1_right 10"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_link_ToF_sensorboard2" args="0.10 0.20 -0.053 $(arg PI05) -$(arg DEG8) 0 base_link ToF_sensorboard2 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard2_left" args="0 0.02 0.0  0 0 0  ToF_sensorboard2 ToF_sensorboard2_left 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard2_right" args="0 -0.02 0.0  0 0 0  ToF_sensorboard2 ToF_sensorboard2_right 10"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_link_ToF_sensorboard3" args="0.0 0.20 -0.053 $(arg PI05) -$(arg DEG8) 0  base_link ToF_sensorboard3 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard3_left" args="0 0.02 0.0  0 0 0  ToF_sensorboard3 ToF_sensorboard3_left 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard3_right" args="0 -0.02 0.0  0 0 0  ToF_sensorboard3 ToF_sensorboard3_right 10"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_link_ToF_sensorboard4" args="-0.10 0.20 -0.053 $(arg PI05) -$(arg DEG8) 0 base_link ToF_sensorboard4 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard4_left" args="0 0.02 0.0  0 0 0  ToF_sensorboard4 ToF_sensorboard4_left 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard4_right" args="0 -0.02 0.0  0 0 0  ToF_sensorboard4 ToF_sensorboard4_right 10"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_link_ToF_sensorboard5" args="-0.24 0.19 -0.01 $(arg PI75) -$(arg DEG16) 0  base_link ToF_sensorboard5 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard5_left" args="0 0.02 0.0  0 0 0  ToF_sensorboard5 ToF_sensorboard5_left 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard5_right" args="0 -0.02 0.0  0 0 0  ToF_sensorboard5 ToF_sensorboard5_right 10"/>
+
+
+
+<!-- right side -->
+  <node pkg="tf" type="static_transform_publisher" name="base_link_ToF_sensorboard6" args="0.24 -0.19 -0.01 -$(arg PI025) -$(arg DEG16) 0 base_link ToF_sensorboard6 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard6_left" args="0 0.02 0.0  0 0 0  ToF_sensorboard6 ToF_sensorboard6_left 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard6_right" args="0 -0.02 0.0  0 0 0  ToF_sensorboard6 ToF_sensorboard6_right 10"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_link_ToF_sensorboard7" args="0.10 -0.20 -0.053 -$(arg PI05) -$(arg DEG8) 0 base_link ToF_sensorboard7 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard7_left" args="0 0.02 0.0  0 0 0  ToF_sensorboard7 ToF_sensorboard7_left 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard7_right" args="0 -0.02 0.0  0 0 0  ToF_sensorboard7 ToF_sensorboard7_right 10"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_link_ToF_sensorboard8" args="0.0 -0.20 -0.053 -$(arg PI05) -$(arg DEG8) 0  base_link ToF_sensorboard8 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard8_left" args="0 0.02 0.0  0 0 0  ToF_sensorboard8 ToF_sensorboard8_left 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard8_right" args="0 -0.02 0.0  0 0 0  ToF_sensorboard8 ToF_sensorboard8_right 10"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_link_ToF_sensorboard9" args="-0.10 -0.20 -0.053 -$(arg PI05) -$(arg DEG8) 0 base_link ToF_sensorboard9 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard9_left" args="0 0.02 0.0  0 0 0  ToF_sensorboard9 ToF_sensorboard9_left 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard9_right" args="0 -0.02 0.0  0 0 0  ToF_sensorboard9 ToF_sensorboard9_right 10"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="base_link_ToF_sensorboard10" args="-0.24 -0.19 -0.01 -$(arg PI75) -$(arg DEG16) 0  base_link ToF_sensorboard10 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard10_left" args="0 0.02 0.0  0 0 0  ToF_sensorboard10 ToF_sensorboard10_left 10"/>
+  <node pkg="tf" type="static_transform_publisher" name="ToF_sensorboard10_right" args="0 -0.02 0.0  0 0 0  ToF_sensorboard10 ToF_sensorboard10_right 10"/>
+
+<!-- ToF Node -->
+   <arg name="NodeName" default="EvoToFController" />
+
+  <node name="$(arg NodeName)" pkg="evo_rd_platform_example" type="tof_controller_node" output="screen" >
+    
+<!-- update rate -->
+    <param name="loop_rate_hz"       value="20.0"     />
+
+<!-- can interface -->
+    <param name="can_interface_name"   value="USBtin-ID-GOES-HERE" />
+
+    <param name="ToF_FoV_rad"       value="0.471239" />
+    <param name="ToF_range_max_m"   value="4.0" />
+
+    <param name="n_ToF_sensorboards"   value="10" />
+
+  </node>
+
+<group ns="$(arg NodeName)">
+  <group ns="sensorboard1">
+    <param name="id"              value="20"    />
+    <param name="frame_id"        value="ToF_sensorboard1"    />
+  </group>
+
+  <group ns="sensorboard2">
+    <param name="id"              value="21"    />
+    <param name="frame_id"        value="ToF_sensorboard2"    />
+  </group>
+
+  <group ns="sensorboard3">
+    <param name="id"              value="22"    />
+    <param name="frame_id"        value="ToF_sensorboard3"    />
+  </group>
+
+  <group ns="sensorboard4">
+    <param name="id"              value="23"    />
+    <param name="frame_id"        value="ToF_sensorboard4"    />
+  </group>
+  
+  <group ns="sensorboard5">
+    <param name="id"              value="24"    />
+    <param name="frame_id"        value="ToF_sensorboard5"    />
+  </group>
+  
+  <group ns="sensorboard6">
+    <param name="id"              value="25"    />
+    <param name="frame_id"        value="ToF_sensorboard6"    />
+  </group>
+  
+  <group ns="sensorboard7">
+    <param name="id"              value="26"    />
+    <param name="frame_id"        value="ToF_sensorboard7"    />
+  </group>
+  
+  <group ns="sensorboard8">
+    <param name="id"              value="27"    />
+    <param name="frame_id"        value="ToF_sensorboard8"    />
+  </group>
+  
+  <group ns="sensorboard9">
+    <param name="id"              value="28"    />
+    <param name="frame_id"        value="ToF_sensorboard9"    />
+  </group>
+  
+  <group ns="sensorboard10">
+    <param name="id"              value="29"    />
+    <param name="frame_id"        value="ToF_sensorboard10"    />
+  </group>
+</group>  
+
+</launch>
+
