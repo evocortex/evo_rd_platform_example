@@ -31,6 +31,7 @@
 #include "nav_msgs/Odometry.h"
 #include "std_msgs/Bool.h"
 #include "std_msgs/Int8.h"
+#include "std_msgs/Float32.h"
 
 namespace evo {
 
@@ -65,6 +66,7 @@ class BaseControllerROS
    ros::Publisher _pub_odom;
    ros::Publisher _pub_enable_signal_off;
    ros::Subscriber _sub_cmd_lift;
+   std::vector<ros::Publisher> _pub_lift_pos_vec;
 
    ros::Rate _loop_rate_hz;
 
@@ -91,6 +93,7 @@ class BaseControllerROS
    void cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel);
    void checkAndApplyCmdVel();
 
+   void publishLiftPos();
    void cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift);
    void checkAndApplyCmdLift();
 };

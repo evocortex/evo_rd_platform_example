@@ -120,6 +120,12 @@ void BaseControllerROS::init()
    _sub_cmd_lift = _nh.subscribe<std_msgs::Int8>(
        topic_sub_cmd_lift, 1, &BaseControllerROS::cbCmdLift, this);
 
+   const unsigned int num_lift = _lift_controller.getPositionVec().size();
+   for(auto idx = 0u; idx < num_lift; idx++) {
+      ros::Publisher position_pub = _nh.advertise<std_msgs::Float32>("lift/" + std::to_string(idx) + "/position/", 1);
+      _pub_lift_pos_vec.push_back(position_pub);
+   }
+
    // finish flag
    evo::log::get() << _logger_prefix << "finished init process!" << evo::info;
    _is_initialized = true;
@@ -181,6 +187,8 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
             param_map["pwm_limit"]     = 0.0;
             param_map["gear_ratio"]    = 0.0;
             param_map["encoder_res"]   = 0.0;
+            param_map["adc_conv"]      = 0.0;
+            param_map["adc_offs"]      = 0.0;
             param_map["motor_mapping"] = 0.0;
 
             for(auto& param : param_map)
@@ -209,12 +217,15 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
                 static_cast<evo_mbed::MotorType>(param_map.at("type"));
             motor_config.mode =
                 static_cast<evo_mbed::MotorControlMode>(param_map.at("ctrl_mode"));
-            motor_config.kp          = param_map.at("kp");
-            motor_config.ki          = param_map.at("ki");
-            motor_config.kd          = param_map.at("kd");
-            motor_config.encoder_res = param_map.at("encoder_res");
-            motor_config.gear_ratio  = param_map.at("gear_ratio");
-            motor_config.pwm_limit   = param_map.at("pwm_limit");
+            motor_config.kp                     = param_map.at("kp");
+            motor_config.ki                     = param_map.at("ki");
+            motor_config.kd                     = param_map.at("kd");
+            motor_config.encoder_res            = param_map.at("encoder_res");
+            motor_config.gear_ratio             = param_map.at("gear_ratio");
+            motor_config.pwm_limit              = param_map.at("pwm_limit");
+            motor_config.adc_conv_mm_per_tick   = param_map.at("adc_conv");            
+            motor_config.adc_offs_mm            = param_map.at("adc_offs");
+
             motor_config.motor_mapping =
                 static_cast<uint8_t>(param_map.at("motor_mapping"));
             mc_config.motor_configs.push_back(motor_config);
@@ -286,6 +297,19 @@ void BaseControllerROS::cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel)
    _cmd_vel._x_ms     = cmd_vel->linear.x;
    _cmd_vel._y_ms     = cmd_vel->linear.y;
    _cmd_vel._yaw_rads = cmd_vel->angular.z;
+}
+
+void BaseControllerROS::publishLiftPos()
+{
+   const std::vector<float> positions = _lift_controller.getPositionVec();
+   unsigned int idx = 0u;
+   for(auto& pos : positions) 
+   {
+      std_msgs::Float32 data;
+      data.data = pos;
+      _pub_lift_pos_vec[idx++].publish(data);
+   }
+   std::cout << std::endl;
 }
 
 void BaseControllerROS::cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift)
@@ -400,6 +424,8 @@ void BaseControllerROS::main_loop()
       {
          ros::spinOnce();
          publishOdom();
+         publishLiftPos();
+
 
          if(checkStatus())
          {
