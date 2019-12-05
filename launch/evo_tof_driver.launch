@@ -60,6 +60,9 @@
 <!-- update rate -->
     <param name="loop_rate_hz"       value="20.0"     />
 
+    <param name="topic_pub_range"    value="evo_tof/range"/>
+    <param name="topic_pub_detailed" value="evo_tof/detailed"/>
+
 <!-- can interface -->
     <param name="can_interface_name"   value="USBtin-ID-GOES-HERE" />
 
