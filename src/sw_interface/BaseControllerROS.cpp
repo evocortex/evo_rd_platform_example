@@ -21,7 +21,10 @@
 namespace evo {
 
 BaseControllerROS::BaseControllerROS() :
-    _logger_prefix("BaseControllerROS: "), _error_present(false),
+    _logger_prefix("BaseControllerROS: "), 
+    _lift_moving(false),
+    _lift_moving_strd(false),
+    _error_present(false),
     _is_initialized(false), _loop_rate_hz(50)
 {
    evo::log::init("");
@@ -320,6 +323,14 @@ void BaseControllerROS::cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift)
 
 void BaseControllerROS::checkAndApplyCmdVel()
 {
+   // Check if lift drive is moving -> ignore commands
+   if(_lift_moving) {
+      _cmd_vel._x_ms = 0.0;
+      _cmd_vel._y_ms = 0.0;
+      _cmd_vel._yaw_rads = 0.0;
+      return;
+   }
+
    // check timestamp
    if(ros::Time::now().toSec() > (_stamp_cmd_vel.toSec() + _timeout_cmd_vel))
    {
@@ -330,7 +341,6 @@ void BaseControllerROS::checkAndApplyCmdVel()
    }
    else
    {
-      // check limits for max speed?
       _mecanum_drive.setTargetSpeed(_cmd_vel);
    }
 }
@@ -344,11 +354,41 @@ void BaseControllerROS::checkAndApplyCmdLift()
                       << "cmd lift timeout detected! stopping lift mechanism.."
                       << evo::warn;
       _lift_controller.setMovingDirection(0);
+      _lift_moving = false;
    }
    else
    {
+      if(_cmd_lift != 0) {
+         _lift_moving = true;
+      }
+      else {
+         _lift_moving = false;
+      }
+
       _lift_controller.setMovingDirection(_cmd_lift);
    }
+
+   if(_lift_moving && !_lift_moving_strd) {
+      MecanumVel zero;
+      _mecanum_drive.setTargetSpeed(zero);
+
+      _motor_handler.disableAllDriveMotors();
+   }
+   else if(!_lift_moving && _lift_moving_strd) {
+      MecanumVel zero;
+
+      if(!_motor_handler.enableAllDriveMotors()) {
+         evo::log::get() << _logger_prefix
+                         << "Failed to enable all drives retrying!" 
+                         << evo::warn;
+                         
+         _motor_handler.enableAllDriveMotors();
+      }
+
+      _mecanum_drive.setTargetSpeed(zero);
+   }
+
+   _lift_moving_strd = _lift_moving;
 }
 
 /*
