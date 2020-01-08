@@ -21,11 +21,9 @@
 namespace evo {
 
 BaseControllerROS::BaseControllerROS() :
-    _logger_prefix("BaseControllerROS: "), 
-    _lift_moving(false),
-    _lift_moving_strd(false),
-    _error_present(false),
-    _is_initialized(false), _loop_rate_hz(50)
+    _logger_prefix("BaseControllerROS: "), _lift_moving(false),
+    _lift_moving_strd(false), _error_present(false), _is_initialized(false),
+    _loop_rate_hz(50)
 {
    evo::log::init("");
 }
@@ -114,19 +112,24 @@ void BaseControllerROS::init()
    privateNh.param("odom_child_frame_id", _odom_child_frame_id,
                    std::string("base_footprint"));
 
-   // setup connections
-   _sub_cmd_vel = _nh.subscribe<geometry_msgs::Twist>(
-       topic_sub_cmd_vel, 1, &BaseControllerROS::cbCmdVel, this);
-   _pub_odom = _nh.advertise<nav_msgs::Odometry>(topic_pub_odom, 1);
-   _pub_enable_signal_off =
-       _nh.advertise<std_msgs::Bool>(topic_pub_enable_signal_off, 1);
-   _sub_cmd_lift = _nh.subscribe<std_msgs::Int8>(
-       topic_sub_cmd_lift, 1, &BaseControllerROS::cbCmdLift, this);
+   privateNh.param("enable_lift_control", _lift_control_enabled, false);
 
-   const unsigned int num_lift = _lift_controller.getPositionVec().size();
-   for(auto idx = 0u; idx < num_lift; idx++) {
-      ros::Publisher position_pub = _nh.advertise<std_msgs::Float32>("lift/" + std::to_string(idx) + "/position/", 1);
-      _pub_lift_pos_vec.push_back(position_pub);
+   // setup connections
+   _sub_cmd_vel = _nh.subscribe<geometry_msgs::Twist>(topic_sub_cmd_vel, 1, &BaseControllerROS::cbCmdVel, this);
+   _pub_odom = _nh.advertise<nav_msgs::Odometry>(topic_pub_odom, 1);
+   _pub_enable_signal_off = _nh.advertise<std_msgs::Bool>(topic_pub_enable_signal_off, 1);
+
+   // enable lift if necessary
+   if(_lift_control_enabled)
+   {
+      _sub_cmd_lift = _nh.subscribe<std_msgs::Int8>(topic_sub_cmd_lift, 1, &BaseControllerROS::cbCmdLift, this);
+
+      const unsigned int num_lift = _lift_controller.getPositionVec().size();
+      for(auto idx = 0u; idx < num_lift; idx++)
+      {
+         ros::Publisher position_pub = _nh.advertise<std_msgs::Float32>("lift/" + std::to_string(idx) + "/position/", 1);
+         _pub_lift_pos_vec.push_back(position_pub);
+      }
    }
 
    // finish flag
@@ -220,14 +223,14 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
                 static_cast<evo_mbed::MotorType>(param_map.at("type"));
             motor_config.mode =
                 static_cast<evo_mbed::MotorControlMode>(param_map.at("ctrl_mode"));
-            motor_config.kp                     = param_map.at("kp");
-            motor_config.ki                     = param_map.at("ki");
-            motor_config.kd                     = param_map.at("kd");
-            motor_config.encoder_res            = param_map.at("encoder_res");
-            motor_config.gear_ratio             = param_map.at("gear_ratio");
-            motor_config.pwm_limit              = param_map.at("pwm_limit");
-            motor_config.adc_conv_mm_per_tick   = param_map.at("adc_conv");            
-            motor_config.adc_offs_mm            = param_map.at("adc_offs");
+            motor_config.kp                   = param_map.at("kp");
+            motor_config.ki                   = param_map.at("ki");
+            motor_config.kd                   = param_map.at("kd");
+            motor_config.encoder_res          = param_map.at("encoder_res");
+            motor_config.gear_ratio           = param_map.at("gear_ratio");
+            motor_config.pwm_limit            = param_map.at("pwm_limit");
+            motor_config.adc_conv_mm_per_tick = param_map.at("adc_conv");
+            motor_config.adc_offs_mm          = param_map.at("adc_offs");
 
             motor_config.motor_mapping =
                 static_cast<uint8_t>(param_map.at("motor_mapping"));
@@ -273,10 +276,10 @@ void BaseControllerROS::publishOdom()
    const double cvy   = _mecanum_covariance.cov_vel_y;
    const double cvyaw = _mecanum_covariance.cov_vel_yaw;
 
-   odom.twist.covariance = {cpx, 0.0, 0.0, 0.0, 0.0, 0.0,   0.0f, cpy, 0.0,
-                            0.0, 0.0, 0.0, 0.0, 0.0, cpyaw, 0.0,  0.0, 0.0,
-                            0.0, 0.0, 0.0, cvx, 0.0, 0.0,   0.0,  0.0, 0.0,
-                            0.0, cvy, 0.0, 0.0, 0.0, 0.0,   0.0,  0.0, cvyaw};
+   odom.twist.covariance = {cpx, 0.0, 0.0, 0.0, 0.0, 0.0,   0.0, cpy, 0.0,
+                            0.0, 0.0, 0.0, 0.0, 0.0, cpyaw, 0.0, 0.0, 0.0,
+                            0.0, 0.0, 0.0, cvx, 0.0, 0.0,   0.0, 0.0, 0.0,
+                            0.0, cvy, 0.0, 0.0, 0.0, 0.0,   0.0, 0.0, cvyaw};
 
    odom.pose.covariance = odom.twist.covariance;
    _pub_odom.publish(odom);
@@ -305,8 +308,8 @@ void BaseControllerROS::cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel)
 void BaseControllerROS::publishLiftPos()
 {
    const std::vector<float> positions = _lift_controller.getPositionVec();
-   unsigned int idx = 0u;
-   for(auto& pos : positions) 
+   unsigned int idx                   = 0u;
+   for(auto& pos : positions)
    {
       std_msgs::Float32 data;
       data.data = pos;
@@ -324,9 +327,10 @@ void BaseControllerROS::cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift)
 void BaseControllerROS::checkAndApplyCmdVel()
 {
    // Check if lift drive is moving -> ignore commands
-   if(_lift_moving) {
-      _cmd_vel._x_ms = 0.0;
-      _cmd_vel._y_ms = 0.0;
+   if(_lift_moving)
+   {
+      _cmd_vel._x_ms     = 0.0;
+      _cmd_vel._y_ms     = 0.0;
       _cmd_vel._yaw_rads = 0.0;
       return;
    }
@@ -358,30 +362,34 @@ void BaseControllerROS::checkAndApplyCmdLift()
    }
    else
    {
-      if(_cmd_lift != 0) {
+      if(_cmd_lift != 0)
+      {
          _lift_moving = true;
       }
-      else {
+      else
+      {
          _lift_moving = false;
       }
 
       _lift_controller.setMovingDirection(_cmd_lift);
    }
 
-   if(_lift_moving && !_lift_moving_strd) {
+   if(_lift_moving && !_lift_moving_strd)
+   {
       MecanumVel zero;
       _mecanum_drive.setTargetSpeed(zero);
 
       _motor_handler.disableAllDriveMotors();
    }
-   else if(!_lift_moving && _lift_moving_strd) {
+   else if(!_lift_moving && _lift_moving_strd)
+   {
       MecanumVel zero;
 
-      if(!_motor_handler.enableAllDriveMotors()) {
-         evo::log::get() << _logger_prefix
-                         << "Failed to enable all drives retrying!" 
+      if(!_motor_handler.enableAllDriveMotors())
+      {
+         evo::log::get() << _logger_prefix << "Failed to enable all drives retrying!"
                          << evo::warn;
-                         
+
          _motor_handler.enableAllDriveMotors();
       }
 
@@ -464,13 +472,12 @@ void BaseControllerROS::main_loop()
       {
          ros::spinOnce();
          publishOdom();
-         publishLiftPos();
-
+         if(_lift_control_enabled) publishLiftPos();
 
          if(checkStatus())
          {
             checkAndApplyCmdVel();
-            checkAndApplyCmdLift();
+            if(_lift_control_enabled) checkAndApplyCmdLift();
          }
 
          _loop_rate_hz.sleep();

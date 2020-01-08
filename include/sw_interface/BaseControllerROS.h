@@ -61,6 +61,7 @@ class BaseControllerROS
    double _timeout_cmd_lift;
    ros::Time _stamp_cmd_lift;
    int8_t _cmd_lift;
+   bool _lift_control_enabled;
 
    // ROS
    ros::NodeHandle _nh;
