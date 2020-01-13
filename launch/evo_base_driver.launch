@@ -7,19 +7,19 @@
   <node name="$(arg NodeName)" pkg="evo_rd_platform_example" type="base_controller_node" output="screen" >
     <param name="loop_rate_hz"       value="30.0"     />
 
-<!-- Publishers -->
-    <param name="topic_pub_odom"     value="odom"     />
-    <param name="topic_pub_enable_signal_off"     value="enable_signal_off"     />
-
 <!-- Subscribers -->
     <param name="topic_sub_cmd_vel"     value="cmd_vel"     />
     <param name="topic_sub_cmd_lift"     value="cmd_lift"     />
 
-<!-- enable tf -->
-    <param name="enable_odom_tf"       value="true" />
+<!-- Publishers -->
+    <param name="topic_pub_odom"            value="odom"     />
+    <param name="topic_pub_enable_signal_off"     value="enable_signal_off"     />
+
     <param name="odom_frame_id"        value="odom" />
     <param name="odom_child_frame_id"  value="base_footprint" />
- 
+
+<!-- enable tf -->
+    <param name="enable_odom_tf"       value="true" />
 
 <!-- can interface -->
     <param name="can_interface_name"   value="USBtin-ID-GOES-HERE" />
@@ -46,6 +46,7 @@
   </node>
 
 <!-- Motor Mapping drives: 0 = no_pos, 1=front_left, 2=front_right, 3=back_right, 4=back_left-->
+<!-- Motor Types: 0 = no_type, 1=lift, 2=drive-->
 
 <group ns="$(arg NodeName)">
   <group ns="ms1">
