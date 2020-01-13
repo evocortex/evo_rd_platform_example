@@ -250,6 +250,10 @@ void BaseControllerROS::publishOdom()
 
    nav_msgs::Odometry odom;
    odom.header.stamp          = ros::Time::now();
+   odom.header.frame_id = _odom_frame_id;
+   odom.child_frame_id = _odom_child_frame_id;
+
+
    odom.twist.twist.linear.x  = odom_raw._x_ms;
    odom.twist.twist.linear.y  = odom_raw._y_ms;
    odom.twist.twist.angular.z = odom_raw._yaw_rads;
@@ -282,6 +286,7 @@ void BaseControllerROS::publishOdom()
                             0.0, cvy, 0.0, 0.0, 0.0, 0.0,   0.0, 0.0, cvyaw};
 
    odom.pose.covariance = odom.twist.covariance;
+
    _pub_odom.publish(odom);
 
    // Transform
