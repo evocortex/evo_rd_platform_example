@@ -30,7 +30,8 @@
     <param name="cmd_lift_timeout_s"   value="0.5"     />
 
 <!-- base params -->
-    <param name="debug_motor_mapping"  		       value="false"      />
+		<param name="enable_lift_control"		value="true" />
+    <param name="debug_motor_mapping"   value="false"      />
     
     <param name="wheel_radius_in_m"  		       value="0.05"      />
     <param name="wheel_distance_front_back_in_m"       value="0.45"     />
