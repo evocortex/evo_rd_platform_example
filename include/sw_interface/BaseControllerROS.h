@@ -5,17 +5,26 @@
 
 /**
  * @file BaseControllerROS.h
+ * //  REV
+ * //  WHA STYLE: wrong author 
  * @author evocortex (info@evocortex.com)
  *
+ * //  REV
+ * //  WHA STYLE: Proposal: "Interface class for accessing CAN motor controls using ROS"
  * @brief Interface class to bring the CAN motor stuff into ROS
  *
  * @version 0.1
  * @date 2019-08-14
  *
+ * //  REV
+ * //  WHA STYLE: Year of creation or range of years during which this file was edited?
  * @copyright Copyright (c) 2019 Evocortex GmbH
  *
  */
 
+/*  REV
+ *  WHA STYLE: Include the namespace into the guard define name, e.g. "EVO_BASECONTROLLERROS_H"?
+ */
 #ifndef BASECONTROLLERROS_H
 #define BASECONTROLLERROS_H
 

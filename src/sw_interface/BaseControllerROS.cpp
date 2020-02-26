@@ -5,13 +5,19 @@
 
 /**
  * @file BaseControllerROS.cpp
+ * //  REV
+ * //  WHA STYLE: wrong author 
  * @author evocortex (info@evocortex.com)
  *
+ * //  REV
+ * //  WHA STYLE: Proposal: "Interface class for accessing CAN motor controls using ROS"
  * @brief Interface class to bring the CAN motor stuff into ROS
  *
  * @version 0.1
  * @date 2019-08-14
- *
+ * 
+ * //  REV
+ * //  WHA STYLE: Year of creation or range of years during which this file was edited?
  * @copyright Copyright (c) 2019 Evocortex GmbH
  *
  */
@@ -20,6 +26,9 @@
 
 namespace evo {
 
+/*  REV
+ *  WHA STYLE: In an initialiser list, how many initialisations should there be per code line? One per line would improve readability.
+ */
 BaseControllerROS::BaseControllerROS() :
     _logger_prefix("BaseControllerROS: "), _lift_moving(false),
     _lift_moving_strd(false), _error_present(false), _is_initialized(false),
@@ -28,6 +37,9 @@ BaseControllerROS::BaseControllerROS() :
    evo::log::init("");
 }
 
+/*  REV
+ *  WHA STYLE: Proposal: Variable declarations at the top, initialisations afterwards
+ */
 void BaseControllerROS::init()
 {
    evo::log::get() << _logger_prefix << "start init process!" << evo::info;
@@ -137,6 +149,9 @@ void BaseControllerROS::init()
    _is_initialized = true;
 }
 
+/*  REV
+ *  WHA STYLE: Why not in a single line? -> multiple lines make sense in some situations, but this should be consistent
+ */
 std::vector<MotorShieldConfig>
 BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
 {
@@ -151,6 +166,10 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
    paramPrefix = "ms" + std::to_string(controller_id);
    while(privateNh.hasParam(paramPrefix + "/enable"))
    {
+      /*  REV
+       *  WHA STYLE: Name consistency: enable_mc <-> enable_ms <-> timeout_ms <-> _x_ms
+       */
+
       bool enable_mc = false;
       privateNh.getParam(paramPrefix + "/enable", enable_mc);
       evo::log::get() << _logger_prefix << "Enable ms" << controller_id << ": "
@@ -166,6 +185,11 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
          // load mc param
          MotorShieldConfig mc_config;
          mc_config.id   = controller_id;
+
+         /*  REV
+          *  WHA STYLE:    if(!privateNh.hasParam(..)){timeout_ms = 10;} else {privateNh.getParam(...)} would be FAR more readable
+          *                see further below for an example
+          */
          int timeout_ms = 10;
          if(!privateNh.getParam(paramPrefix + "/timeout_ms", timeout_ms))
          {
@@ -176,6 +200,12 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
          }
          mc_config.timeout_ms = static_cast<uint32_t>(timeout_ms);
          // could also be loaded as param
+
+         /*  REV
+          *  WHA STYLE: n_motors is used one single time: to initialise a config value. 
+          *             This way, "magic numbers" in the function body are avoided, which is good.
+          *             Using this style of initialisation more often would improve maintainability and readability.
+          */
          mc_config.n_motors = n_motors;
          mc_config.motor_configs.clear();
 
@@ -253,7 +283,6 @@ void BaseControllerROS::publishOdom()
    odom.header.frame_id = _odom_frame_id;
    odom.child_frame_id = _odom_child_frame_id;
 
-
    odom.twist.twist.linear.x  = odom_raw._x_ms;
    odom.twist.twist.linear.y  = odom_raw._y_ms;
    odom.twist.twist.angular.z = odom_raw._yaw_rads;
@@ -266,6 +295,10 @@ void BaseControllerROS::publishOdom()
 
    odom.pose.pose.position.x     = _odom_pose._x_m;
    odom.pose.pose.position.y     = _odom_pose._y_m;
+
+   /*  REV
+    *  WHA INFO: pose_quaternion. The first letter "n" is missing.
+    */
    tf::Quaternion pose_quaterion = tf::createQuaternionFromYaw(_odom_pose._yaw_rad);
    odom.pose.pose.orientation.w  = pose_quaterion.getW();
    odom.pose.pose.orientation.y  = pose_quaterion.getY();
@@ -280,6 +313,9 @@ void BaseControllerROS::publishOdom()
    const double cvy   = _mecanum_covariance.cov_vel_y;
    const double cvyaw = _mecanum_covariance.cov_vel_yaw;
 
+   /*  REV
+    *  WHA STYLE: If this is a 6x6 diagonal matrix, this should look like a 6x6 diagonal matrix.
+    */
    odom.twist.covariance = {cpx, 0.0, 0.0, 0.0, 0.0, 0.0,   0.0, cpy, 0.0,
                             0.0, 0.0, 0.0, 0.0, 0.0, cpyaw, 0.0, 0.0, 0.0,
                             0.0, 0.0, 0.0, cvx, 0.0, 0.0,   0.0, 0.0, 0.0,
@@ -305,6 +341,11 @@ void BaseControllerROS::publishOdom()
 void BaseControllerROS::cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel)
 {
    _stamp_cmd_vel     = ros::Time::now();
+
+   /*  REV
+    *  WHA INFO: To the left, there is x_ms; to the right, just x. What do "ms" and "rads" mean? 
+    *            Velocity has the unit "meters per second", yet "ms" looks more like "milliseconds" or "meter times second".
+    */
    _cmd_vel._x_ms     = cmd_vel->linear.x;
    _cmd_vel._y_ms     = cmd_vel->linear.y;
    _cmd_vel._yaw_rads = cmd_vel->angular.z;
@@ -379,6 +420,17 @@ void BaseControllerROS::checkAndApplyCmdLift()
       _lift_controller.setMovingDirection(_cmd_lift);
    }
 
+
+   /*  REV
+    *  WHA STYLE: As _lift_moving_strd seems to be the old _lift_moving value, this should be an edge detection.
+    *             1. What does "_strd" mean? Why not "_old" or something similar?
+    *      INFO:  2. Why try exactly 2 times to reenable the drive motors?
+    *             3. Why is there no error message after the second attempt,
+    *                considering that there will be no next attempt without another edge? (checkStatus() will reenable them?)
+    *             4. Why not set the speed to zero first, then enable the drives?
+    *             5. For future code formatting: Format change commits should probably not be mixed with "real" commits
+    */
+
    if(_lift_moving && !_lift_moving_strd)
    {
       MecanumVel zero;
@@ -403,6 +455,10 @@ void BaseControllerROS::checkAndApplyCmdLift()
 
    _lift_moving_strd = _lift_moving;
 }
+
+/*  REV
+ *  WHA STYLE: As we use git, there should be no need for function corpses remaining in the source code.
+ */
 
 /*
  * -> Removed by bausma
@@ -444,10 +500,21 @@ const bool BaseControllerROS::checkStatus()
 
       _motor_handler.disableAllMotors();
    }
+
+   /*  REV
+    *  WHA STYLE: It is not quite clear whether disabling all motors sets the handler to a valid status, therefore leading to the else branch.
+    *      INFO:  As we only detect an error and create the edge ourselves by toggling the bool,
+    *             I personally wouldn't quite call this edge detection.
+    */
+
    // falling edge detection for error status to re-enable motors
    else if(_error_present)
    {
       _error_present = false;
+
+      /*  REV
+       *  WHA STYLE: If there is a comment admitting that this is a hack, I would like to know more about why this is a hack and why this hack is necessary.
+       */
 
       // Small hack
       std::this_thread::sleep_for(std::chrono::milliseconds(500u));
@@ -477,6 +544,10 @@ void BaseControllerROS::main_loop()
       {
          ros::spinOnce();
          publishOdom();
+
+         /*  REV
+          *  WHA STYLE: Not really a fan of using if-clauses like this.
+          */
          if(_lift_control_enabled) publishLiftPos();
 
          if(checkStatus())
