@@ -69,6 +69,7 @@ BaseControllerROS::BaseControllerROS() :
  *                         establish the topics (The ROS root namespace can be referenced with a
  *                         preceeding /). The private node handle could be made a member variable
  *                         since it is used in other member function.
+ *  HEN: Return success status or error code to give the caller the possibility to react
  */
 void BaseControllerROS::init()
 {

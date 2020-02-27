@@ -28,7 +28,10 @@
  *             Use more underscores for the include guard to improve readability.
  * 
  *               EVO_BASE_CONTROLLER_ROS_H
+ * 
+ *  HEN: Or use #pragma once (sadly is not defined as c++ standard, though most compiler support it, reported to be faster)
  */
+
 #ifndef BASECONTROLLERROS_H
 #define BASECONTROLLERROS_H
 
