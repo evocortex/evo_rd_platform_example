@@ -22,12 +22,32 @@
  *
  */
 
+/* REV
+ * MPP INFO: * Does this header need to be public?
+ *           * If yes, the directory sw_interface diverges from the standard ROS
+ *             package layout.
+ *             See: http://wiki.ros.org/Packages
+ */
 #include "sw_interface/BaseControllerROS.h"
 
 namespace evo {
 
 /*  REV
- *  WHA STYLE: In an initialiser list, how many initialisations should there be per code line? One per line would improve readability.
+ *  WHA STYLE: In an initializer list, how many initialisations should there be per code line?
+ *             One per line would improve readability.
+ *  MPP STYLE: * Suggestion for initializer list
+ * 
+ *              BaseControllerROS::BaseControllerROS()
+ *                : _logger_prefix("BaseControllerROS: ")
+ *                , _lift_moving(false)
+ *                , ...
+ *              { ... }
+ * 
+ *              Advantages: Clearer and easier to rearrange
+ *            * Initializer list does not include all member variables. Is everything
+ *              correctly initialized?
+ *            * Constructor could be declared noexcept.
+ *  MPP ERROR: Members are not initialized in the order in which they are declared.
  */
 BaseControllerROS::BaseControllerROS() :
     _logger_prefix("BaseControllerROS: "), _lift_moving(false),
@@ -39,6 +59,16 @@ BaseControllerROS::BaseControllerROS() :
 
 /*  REV
  *  WHA STYLE: Proposal: Variable declarations at the top, initialisations afterwards
+ *  MPP ERROR: In case of an initialization failure this function behalves inconsistently.
+ *               Can Interface: The program is terminated by force.
+ *               Mecanum Drive: Function just quits without any feedback to client.
+ *             Suggestion: Return a bool signifing whether init() was successfull and let the
+ *                         client decide how to handle it.
+ *  MPP STYLE: Member variable _nh is only used in this function.
+ *             Suggestion: Use a local variable instead or use the private node handle to
+ *                         establish the topics (The ROS root namespace can be referenced with a
+ *                         preceeding /). The private node handle could be made a member variable
+ *                         since it is used in other member function.
  */
 void BaseControllerROS::init()
 {
@@ -49,6 +79,12 @@ void BaseControllerROS::init()
    ros::NodeHandle privateNh("~");
 
    // parameters for the motor manager
+   /* REV
+    * MPP INFO: Suggestion
+    *           Make the string parameter retrieval a bit nicer:
+    * 
+    *             privateNh.param<std::string>("...", con_interface_name, "can-motor");
+    */
    std::string can_interface_name;
    privateNh.param("can_interface_name", can_interface_name,
                    std::string("can-motor"));
@@ -67,6 +103,15 @@ void BaseControllerROS::init()
    success &= _motor_handler.enableAllMotors();
 
    // parameters for the mecanum drive
+   /* REV
+    * MPP STYLE: Suggestion
+    *            Use a new line for every declared variable. Makes things easier to read.
+    *            Especially when they are initialized at the same time.
+    * 
+    *            double wheel_radius_in_m,
+    *                   wheel_distance_front_back_in_m,
+    *                   wheel_distance_left_right_in_m;
+    */
    double wheel_radius_in_m, wheel_distance_front_back_in_m,
        wheel_distance_left_right_in_m;
    privateNh.param("wheel_radius_in_m", wheel_radius_in_m, 0.0);
@@ -99,6 +144,9 @@ void BaseControllerROS::init()
    privateNh.param("debug_motor_mapping", debug_motor_mapping, false);
    if(debug_motor_mapping)
       _mecanum_drive.debugMotorMapping();
+   /* REV
+    * MPP STYLE: Member variable _mecanum_inverted is only used here. Superfluous?
+    */
    privateNh.param("mecanum_inverted", _mecanum_inverted, false);
 
    // parameters for this class
@@ -136,6 +184,12 @@ void BaseControllerROS::init()
    {
       _sub_cmd_lift = _nh.subscribe<std_msgs::Int8>(topic_sub_cmd_lift, 1, &BaseControllerROS::cbCmdLift, this);
 
+      /* REV
+       * MPP INFO: * Prefer prefix increment operators over their postfix versions.
+       *           * Suggestion
+       *             Declaration of position_pub potentially superfluous. Use _nh.advertise() directly as argument
+       *             for push_back(). Avoids a copy operation.
+       */
       const unsigned int num_lift = _lift_controller.getPositionVec().size();
       for(auto idx = 0u; idx < num_lift; idx++)
       {
@@ -151,6 +205,8 @@ void BaseControllerROS::init()
 
 /*  REV
  *  WHA STYLE: Why not in a single line? -> multiple lines make sense in some situations, but this should be consistent
+ *  MPP STYLE: * Function could be declared const since it does not change member variables.
+ *             * Inconsistent code style for variable names.
  */
 std::vector<MotorShieldConfig>
 BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
@@ -164,6 +220,15 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
 
    // check if the next motorshield exists
    paramPrefix = "ms" + std::to_string(controller_id);
+   /* REV
+    * MPP INFO: Suggestion
+    *           Simplification for the next 4 lines:
+    * 
+    *             bool enable_mc = false;
+    *             while(privateNh.param(paramPrefix + "/enable", enable_mc, false))
+    *             {
+    *                evo::log::get() ...
+    */
    while(privateNh.hasParam(paramPrefix + "/enable"))
    {
       /*  REV
@@ -189,6 +254,9 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
          /*  REV
           *  WHA STYLE:    if(!privateNh.hasParam(..)){timeout_ms = 10;} else {privateNh.getParam(...)} would be FAR more readable
           *                see further below for an example
+          *  MPP STYLE: Suggestion
+          *             Use the param() function instead since it allows you to specify
+          *             a default value for timeout_ms.
           */
          int timeout_ms = 10;
          if(!privateNh.getParam(paramPrefix + "/timeout_ms", timeout_ms))
@@ -210,6 +278,30 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
          mc_config.motor_configs.clear();
 
          // load params for two motors
+         /* REV
+          * MPP INFO: * for loop condition is a signed unsigned comparission.
+          *           * Suggestion to simplify motor configuration retrieval
+          *             Setup the map layout while defining the param_map variable
+          *             with the help of an initializer list:
+          * 
+          *               std::map<std::string, double> param_map({
+          *                 {"type",      0.},
+          *                 {"ctrl_mode", 0.},
+          *                 ...});
+          * 
+          *             Use the param() function with a default value to retrieve
+          *             the parameters:
+          * 
+          *               if(privateNh.param(paramName, param.second, 0.))
+          *               {
+          *                 ...
+          * 
+          *             With that you can drop the parameter existence check with hasParam()
+          *             and you do not need to reset the values of param_map in every loop
+          *             cycle.
+          *           * An unordered_map may be a better choice here since none of the
+          *             advantages of map are used.
+          */
          for(int motor_id = 0; motor_id < mc_config.n_motors; motor_id++)
          {
             evo::log::get() << _logger_prefix << "Loading parameters for motor"
@@ -248,6 +340,11 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
                                   << evo::warn;
                }
             }
+            /* REV
+             * MPP STYLE: Bounds checked element access with at() is pointless since we know
+             *            that the keys exit. 
+             *            Suggestion: Use operator[] instead.
+             */
             MotorConfig motor_config;
             motor_config.type =
                 static_cast<evo_mbed::MotorType>(param_map.at("type"));
@@ -274,6 +371,15 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
    return mc_config_ros;
 }
 
+/* REV
+ * MPP STYLE: * Member variable _odom_pose only used in this function.
+ *              Suggestion: Turn it into a local variable.
+ *            * Suggestion
+ *              Turn the odom message into a member variable and set it up
+ *              in the init() function. This would make the member variables
+ *              _odom_frame_id, _odom_child_frame_id and _mecanum_covariance
+ *              obsolete.
+ */
 void BaseControllerROS::publishOdom()
 {
    MecanumVel odom_raw = _mecanum_drive.getOdom();
@@ -306,6 +412,9 @@ void BaseControllerROS::publishOdom()
    odom.pose.pose.orientation.x  = pose_quaterion.getX();
 
    // covariances
+   /* REV
+    * MPP INFO: const qualifiers pointless.
+    */
    const double cpx   = _mecanum_covariance.cov_pos_x;
    const double cpy   = _mecanum_covariance.cov_pos_y;
    const double cpyaw = _mecanum_covariance.cov_pos_yaw;
@@ -355,12 +464,22 @@ void BaseControllerROS::publishLiftPos()
 {
    const std::vector<float> positions = _lift_controller.getPositionVec();
    unsigned int idx                   = 0u;
+   /* REV
+    * MPP INFO: Suggestion
+    *           Use an index based loop instead of a range base one. This would
+    *           make things bit clearer since you are iterating over two std::vectors
+    *           in the same way.
+    */
    for(auto& pos : positions)
    {
       std_msgs::Float32 data;
       data.data = pos;
       _pub_lift_pos_vec[idx++].publish(data);
    }
+   /* REV
+    * MPP STYLE: Output really needed? Slows down the main processing loop.
+    *            Especially the flushing part of std::endl.
+    */
    std::cout << std::endl;
 }
 
@@ -382,6 +501,15 @@ void BaseControllerROS::checkAndApplyCmdVel()
    }
 
    // check timestamp
+   /* REV
+    * MPP INFO: Suggestion
+    *           Turn _timeout_cmd_vel into a ros::Duration. This would make 
+    *           writing this if condition easier and its intent clearer:
+    * 
+    *             ros::Time::now() > (_stamp_cmd_vel + _timeout_cmd_vel)
+    * 
+    *           Can also be applied to _timeout_cmd_lift.
+    */
    if(ros::Time::now().toSec() > (_stamp_cmd_vel.toSec() + _timeout_cmd_vel))
    {
       evo::log::get() << _logger_prefix
@@ -395,6 +523,10 @@ void BaseControllerROS::checkAndApplyCmdVel()
    }
 }
 
+/* REV
+ * MPP STYLE: Member variable _lift_moving_strd only used in this function.
+ *            Suggestion: Turn it into static local variable.
+ */
 void BaseControllerROS::checkAndApplyCmdLift()
 {
    // check timestamp
@@ -408,6 +540,9 @@ void BaseControllerROS::checkAndApplyCmdLift()
    }
    else
    {
+      /* REV
+       * MPP INFO: Shorter: _lift_moving = (_cmd_lift != 0);
+       */
       if(_cmd_lift != 0)
       {
          _lift_moving = true;
@@ -484,6 +619,14 @@ signal?" << evo::error; enable_signal_off.data = true;
 }
 */
 
+/* REV
+ * MPP STYLE: Member variable _error_present only used in this function.
+ *            Suggestion: Turn it into a (static) local variable.
+ * MPP INFO: Suggestion
+ *           Assign the value of _error_present to enable_signal_off.data
+ *           right before publishing the message. Spares you an assignment
+ *           and makes things a bit clearer.
+ */
 const bool BaseControllerROS::checkStatus()
 {
    std_msgs::Bool enable_signal_off;
@@ -502,18 +645,23 @@ const bool BaseControllerROS::checkStatus()
    }
 
    /*  REV
-    *  WHA STYLE: It is not quite clear whether disabling all motors sets the handler to a valid status, therefore leading to the else branch.
+    *  WHA STYLE: It is not quite clear whether disabling all motors sets the handler to a valid status, 
+    *             therefore leading to the else branch.
     *      INFO:  As we only detect an error and create the edge ourselves by toggling the bool,
     *             I personally wouldn't quite call this edge detection.
+    *  MPP INFO: * Why wait an entire loop cycle before handling the error? 
+    *            * Expression "falling edge detection" makes no sense.
     */
-
    // falling edge detection for error status to re-enable motors
    else if(_error_present)
    {
       _error_present = false;
 
       /*  REV
-       *  WHA STYLE: If there is a comment admitting that this is a hack, I would like to know more about why this is a hack and why this hack is necessary.
+       *  WHA STYLE: If there is a comment admitting that this is a hack, I would like to know more 
+       *             about why this is a hack and why this hack is necessary.
+       *  MPP INFO: Sleep disrupts main loop. Program will not react to anything during this period.
+       *            Is this an acceptable behavior?
        */
 
       // Small hack
