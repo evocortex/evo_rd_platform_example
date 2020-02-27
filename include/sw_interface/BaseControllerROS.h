@@ -16,6 +16,11 @@
  *
  */
 
+/* REV
+ * MPP STYLE: Suggestion
+ *            Use a more unique include guard: <ROS_PACKAGE_NAME>_<FILE_NAME>_H
+ *            Here: EVO_RD_PLATFORM_EXAMPLE_BASE_CONTROLLER_ROS_H
+ */
 #ifndef BASECONTROLLERROS_H
 #define BASECONTROLLERROS_H
 
@@ -27,6 +32,10 @@
 
 #include "ros/ros.h"
 #include "geometry_msgs/Twist.h"
+/* MPP INFO: Suggestion
+ *           Migration to tf2_ros
+ *           See: http://wiki.ros.org/tf2/Tutorials/Writing%20a%20tf2%20broadcaster%20%28C%2B%2B%29  
+ */
 #include "tf/transform_broadcaster.h"
 #include "nav_msgs/Odometry.h"
 #include "std_msgs/Bool.h"
@@ -37,6 +46,16 @@ namespace evo {
 
 class BaseControllerROS
 {
+  /* REV
+   * MPP STYLE: * Suggestion
+   *              Public members first because they are the interesting part for any
+   *              client of this header.
+   *            * Missing documentation for public members.
+   *            * This class has an awful lot of member variables.
+   *              Suggestions: Remove superfluous ones. Try to cluster others.
+   * MPP INFO: Dependence on transitive includes potentially problematic?
+   *           Examples: Usage of std::string / std::to_string without #include <string> 
+   */
  private:
    std::string _logger_prefix;
 
@@ -88,8 +107,12 @@ class BaseControllerROS
 
    void init();
    std::vector<MotorShieldConfig> loadConfigROS(ros::NodeHandle& privateNh);
+  /* REV
+   * MPP STYLE: * Next two functions have a different code style.
+   *            * const qualifier of return value and void parameter pointless. 
+   *              Copy & paste from C code?  
+   */
    void main_loop();
-
    const bool checkStatus(void);
 
    void publishOdom();
