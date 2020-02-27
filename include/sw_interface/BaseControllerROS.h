@@ -3,11 +3,15 @@
 //# Further regulations can be found in LICENSE file.           #
 //###############################################################
 
+// REV File header format should be defined for company
+
+
 /**
  * @file BaseControllerROS.h
  * //  REV
- * //  WHA STYLE: wrong author 
- * @author evocortex (info@evocortex.com)
+ * //  WHA STYLE: wrong author
+ * // review: author intern 3 characters (First from name, second and third from surname)
+ * @author evocortex (info@evocortex.com) - MMA
  *
  * //  REV
  * //  WHA STYLE: Proposal: "Interface class for accessing CAN motor controls using ROS"
@@ -29,9 +33,8 @@
  * 
  *               EVO_BASE_CONTROLLER_ROS_H
  * 
- *  HEN: Or use #pragma once (sadly is not defined as c++ standard, though most compiler support it, reported to be faster)
+ * HEN INFO: Or use #pragma once (sadly is not defined as c++ standard, though most compiler support it, reported to be faster)
  */
-
 #ifndef BASECONTROLLERROS_H
 #define BASECONTROLLERROS_H
 

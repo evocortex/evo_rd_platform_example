@@ -50,16 +50,19 @@ namespace evo {
  *  MPP ERROR: Members are not initialized in the order in which they are declared.
  */
 BaseControllerROS::BaseControllerROS() :
-    _logger_prefix("BaseControllerROS: "), _lift_moving(false),
-    _lift_moving_strd(false), _error_present(false), _is_initialized(false),
-    _loop_rate_hz(50)
+    _logger_prefix("BaseControllerROS: ")
+    ,_lift_moving(false)
+    ,_lift_moving_strd(false)
+    ,_error_present(false)
+    ,_is_initialized(false)
+    ,_loop_rate_hz(50)
 {
    evo::log::init("");
 }
 
 /*  REV
  *  WHA STYLE: Proposal: Variable declarations at the top, initialisations afterwards
- *  MPP ERROR: In case of an initialization failure this function behalves inconsistently.
+ *  +++ MPP ERROR: In case of an initialization failure this function behalves inconsistently.
  *               Can Interface: The program is terminated by force.
  *               Mecanum Drive: Function just quits without any feedback to client.
  *             Suggestion: Return a bool signifing whether init() was successfull and let the
@@ -69,7 +72,7 @@ BaseControllerROS::BaseControllerROS() :
  *                         establish the topics (The ROS root namespace can be referenced with a
  *                         preceeding /). The private node handle could be made a member variable
  *                         since it is used in other member function.
- *  HEN: Return success status or error code to give the caller the possibility to react
+ *  +++ HEN INFO: Return success status or error code to give the caller the possibility to react
  */
 void BaseControllerROS::init()
 {
@@ -81,7 +84,8 @@ void BaseControllerROS::init()
 
    // parameters for the motor manager
    /* REV
-    * MPP INFO: Suggestion
+    * review: matter of taste
+    * +++ MPP INFO: Suggestion
     *           Make the string parameter retrieval a bit nicer:
     * 
     *             privateNh.param<std::string>("...", con_interface_name, "can-motor");
@@ -96,6 +100,8 @@ void BaseControllerROS::init()
       evo::log::get() << _logger_prefix << "Check if the interfacename ["
                       << can_interface_name << "] is correct!" << evo::error;
       evo::log::get() << _logger_prefix << "--> Shutdown" << evo::error;
+
+      // TODO REV no exit() inside class
       exit(1);
    }
    _motor_handler.setConfig(loadConfigROS(privateNh));
@@ -453,7 +459,7 @@ void BaseControllerROS::cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel)
    _stamp_cmd_vel     = ros::Time::now();
 
    /*  REV
-    *  WHA INFO: To the left, there is x_ms; to the right, just x. What do "ms" and "rads" mean? 
+    *  +++ WHA INFO: To the left, there is x_ms; to the right, just x. What do "ms" and "rads" mean? 
     *            Velocity has the unit "meters per second", yet "ms" looks more like "milliseconds" or "meter times second".
     */
    _cmd_vel._x_ms     = cmd_vel->linear.x;
@@ -695,9 +701,9 @@ void BaseControllerROS::main_loop()
          publishOdom();
 
          /*  REV
-          *  WHA STYLE: Not really a fan of using if-clauses like this.
+          *  +++ WHA STYLE: Not really a fan of using if-clauses like this.
           */
-         if(_lift_control_enabled) publishLiftPos();
+         if(_lift_control_enabled) { publishLiftPos(); }
 
          if(checkStatus())
          {
