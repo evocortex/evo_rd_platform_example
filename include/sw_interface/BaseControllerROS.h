@@ -32,6 +32,7 @@
 #include "std_msgs/Bool.h"
 #include "std_msgs/Int8.h"
 #include "std_msgs/Float32.h"
+#include "sensor_msgs/JointState.h"
 
 namespace evo {
 
@@ -61,7 +62,7 @@ class BaseControllerROS
    double _timeout_cmd_lift;
    ros::Time _stamp_cmd_lift;
    int8_t _cmd_lift;
-   bool _lift_control_enabled;
+   bool _enable_lift_control;
 
    // ROS
    ros::NodeHandle _nh;
@@ -72,6 +73,11 @@ class BaseControllerROS
    std::vector<ros::Publisher> _pub_lift_pos_vec;
 
    ros::Rate _loop_rate_hz;
+
+   // Joint state publisher 
+   bool _enable_joint_state_publisher;
+   ros::Publisher _pub_joint_state;
+   sensor_msgs::JointState _joint_state_msg;
 
    // TF
    bool _enable_odom_tf;
@@ -86,16 +92,25 @@ class BaseControllerROS
  public:
    BaseControllerROS();
 
-   void init();
+   bool init();
    std::vector<MotorShieldConfig> loadConfigROS(ros::NodeHandle& privateNh);
    void main_loop();
 
    const bool checkStatus(void);
 
+   void publishBaseStatus();
+
+   // drives
    void publishOdom();
+   void publishOdomMsg(const MecanumVel& odom_vel, const MecanumPose& odom_pose);
+   void publishOdomTF(const MecanumPose& odom_pose);
+   void publishJointStates(const MecanumWheelData& wheel_positions, const MecanumWheelData& wheel_rotations);
+
+
    void cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel);
    void checkAndApplyCmdVel();
 
+   // lift
    void publishLiftPos();
    void cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift);
    void checkAndApplyCmdLift();

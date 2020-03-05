@@ -28,7 +28,7 @@ BaseControllerROS::BaseControllerROS() :
    evo::log::init("");
 }
 
-void BaseControllerROS::init()
+bool BaseControllerROS::init()
 {
    evo::log::get() << _logger_prefix << "start init process!" << evo::info;
 
@@ -38,8 +38,7 @@ void BaseControllerROS::init()
 
    // parameters for the motor manager
    std::string can_interface_name;
-   privateNh.param("can_interface_name", can_interface_name,
-                   std::string("can-motor"));
+   privateNh.param("can_interface_name", can_interface_name, std::string("can-motor"));
    if(!_motor_handler.initCanInterface(can_interface_name))
    {
       evo::log::get() << _logger_prefix
@@ -47,7 +46,7 @@ void BaseControllerROS::init()
       evo::log::get() << _logger_prefix << "Check if the interfacename ["
                       << can_interface_name << "] is correct!" << evo::error;
       evo::log::get() << _logger_prefix << "--> Shutdown" << evo::error;
-      exit(1);
+      return false;
    }
    _motor_handler.setConfig(loadConfigROS(privateNh));
    success &= _motor_handler.initFromConfig();
@@ -71,7 +70,7 @@ void BaseControllerROS::init()
    {
       evo::log::get() << _logger_prefix << "init process not successful!"
                       << evo::error;
-      return;
+      return false;
    }
 
    // covariances
@@ -90,29 +89,56 @@ void BaseControllerROS::init()
    privateNh.param("mecanum_inverted", _mecanum_inverted, false);
 
    // parameters for this class
-   std::string topic_sub_cmd_vel, topic_sub_cmd_lift, topic_pub_odom,
-       topic_pub_enable_signal_off;
+   std::string topic_sub_cmd_vel, topic_sub_cmd_lift, topic_pub_odom, topic_pub_enable_signal_off;
    double com_timeout_s, loop_rate_hz;
    privateNh.param("loop_rate_hz", loop_rate_hz, 50.0);
    _loop_rate_hz = ros::Rate(loop_rate_hz);
 
+   // regular topics
    privateNh.param("topic_pub_odom", topic_pub_odom, std::string("odom"));
-   privateNh.param("topic_pub_enable_signal_off", topic_pub_enable_signal_off,
-                   std::string("enable_signal_off"));
+   privateNh.param("topic_pub_enable_signal_off", topic_pub_enable_signal_off, std::string("enable_signal_off"));
    privateNh.param("topic_sub_cmd_vel", topic_sub_cmd_vel, std::string("cmd_vel"));
-   privateNh.param("topic_sub_cmd_lift", topic_sub_cmd_lift,
-                   std::string("cmd_lift"));
+   privateNh.param("topic_sub_cmd_lift", topic_sub_cmd_lift, std::string("cmd_lift"));
 
+   // timeouts
    privateNh.param("com_timeout_s", com_timeout_s, 0.1);
    privateNh.param("cmd_vel_timeout_s", _timeout_cmd_vel, 0.1);
    privateNh.param("cmd_lift_timeout_s", _timeout_cmd_lift, 0.5);
 
+   // odometry
    privateNh.param("enable_odom_tf", _enable_odom_tf, true);
    privateNh.param("odom_frame_id", _odom_frame_id, std::string("odom"));
-   privateNh.param("odom_child_frame_id", _odom_child_frame_id,
-                   std::string("base_footprint"));
+   privateNh.param("odom_child_frame_id", _odom_child_frame_id, std::string("base_footprint"));
 
-   privateNh.param("enable_lift_control", _lift_control_enabled, false);
+   privateNh.param("enable_lift_control", _enable_lift_control, false);
+
+
+   // toggle joint state publishing
+   privateNh.param("enable_joint_state_publisher", _enable_joint_state_publisher, false);
+   if(_enable_joint_state_publisher)
+   {
+      std::string topic_joint_states;
+      privateNh.param("topic_pub_joint_states", topic_joint_states, std::string("base_joint_states"));
+      _pub_joint_state = _nh.advertise<sensor_msgs::JointState>(topic_joint_states, 1);
+      _joint_state_msg.name.push_back("joint_wheel_front_left");
+      _joint_state_msg.name.push_back("joint_wheel_front_right");
+      _joint_state_msg.name.push_back("joint_wheel_back_right");
+      _joint_state_msg.name.push_back("joint_wheel_back_left");
+      
+      if(_enable_lift_control)
+      {
+         // TODO
+      }
+      else
+      {
+         _joint_state_msg.position.resize(4);
+         _joint_state_msg.velocity.resize(4);
+         // not implemented atm
+         //_joint_state_msg.effort.resize(4);
+      }
+   }
+
+
 
    // setup connections
    _sub_cmd_vel = _nh.subscribe<geometry_msgs::Twist>(topic_sub_cmd_vel, 1, &BaseControllerROS::cbCmdVel, this);
@@ -120,7 +146,7 @@ void BaseControllerROS::init()
    _pub_enable_signal_off = _nh.advertise<std_msgs::Bool>(topic_pub_enable_signal_off, 1);
 
    // enable lift if necessary
-   if(_lift_control_enabled)
+   if(_enable_lift_control)
    {
       _sub_cmd_lift = _nh.subscribe<std_msgs::Int8>(topic_sub_cmd_lift, 1, &BaseControllerROS::cbCmdLift, this);
 
@@ -243,6 +269,116 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
    }
    return mc_config_ros;
 }
+
+void BaseControllerROS::publishOdomMsg(const MecanumVel& odom_vel, const MecanumPose& odom_pose)
+{
+   // create odom nav msg
+   nav_msgs::Odometry odom;
+
+   // header
+   odom.header.stamp    = ros::Time::now();
+   odom.header.frame_id = _odom_frame_id;
+   odom.child_frame_id  = _odom_child_frame_id;
+
+   // pose
+   odom.pose.pose.position.x     = odom_pose._x_m;
+   odom.pose.pose.position.y     = odom_pose._y_m;
+   tf::Quaternion pose_quaterion = tf::createQuaternionFromYaw(odom_pose._yaw_rad);
+   odom.pose.pose.orientation.w  = pose_quaterion.getW();
+   odom.pose.pose.orientation.y  = pose_quaterion.getY();
+   odom.pose.pose.orientation.z  = pose_quaterion.getZ();
+   odom.pose.pose.orientation.x  = pose_quaterion.getX();
+
+   // twist
+   odom.twist.twist.linear.x  = odom_vel._x_ms;
+   odom.twist.twist.linear.y  = odom_vel._y_ms;
+   odom.twist.twist.angular.z = odom_vel._yaw_rads;
+
+   // covariances
+   const double cpx   = _mecanum_covariance.cov_pos_x;
+   const double cpy   = _mecanum_covariance.cov_pos_y;
+   const double cpyaw = _mecanum_covariance.cov_pos_yaw;
+   const double cvx   = _mecanum_covariance.cov_vel_x;
+   const double cvy   = _mecanum_covariance.cov_vel_y;
+   const double cvyaw = _mecanum_covariance.cov_vel_yaw;
+
+   odom.twist.covariance = {cpx, 0.0, 0.0, 0.0, 0.0, 0.0,   
+                            0.0, cpy, 0.0, 0.0, 0.0, 0.0, 
+                            0.0, 0.0, cpyaw, 0.0, 0.0, 0.0,
+                            0.0, 0.0, 0.0, cvx, 0.0, 0.0,   
+                            0.0, 0.0, 0.0, 0.0, cvy, 0.0, 
+                            0.0, 0.0, 0.0, 0.0, 0.0, cvyaw};
+
+   odom.pose.covariance = odom.twist.covariance;
+
+   _pub_odom.publish(odom);
+}
+
+void BaseControllerROS::publishOdomTF(const MecanumPose& odom_pose)
+{
+   tf::StampedTransform tf_odom;
+   // header
+   tf_odom.stamp_          = ros::Time::now();
+   tf_odom.frame_id_       = _odom_frame_id;
+   tf_odom.child_frame_id_ = _odom_child_frame_id;
+   
+   // position
+   tf_odom.setOrigin(tf::Vector3(_odom_pose._x_m, _odom_pose._y_m, 0));
+
+   // rotation
+   tf::Quaternion pose_quaterion = tf::createQuaternionFromYaw(_odom_pose._yaw_rad);
+   tf_odom.setRotation(pose_quaterion);
+
+   _tf_pub_odom.sendTransform(tf_odom);
+}
+
+void BaseControllerROS::publishJointStates(const MecanumWheelData& wheel_positions, const MecanumWheelData& wheel_rotations)
+{
+   _joint_state_msg.position[0] = wheel_positions.front_left;
+   _joint_state_msg.position[1] = wheel_positions.front_right;
+   _joint_state_msg.position[2] = wheel_positions.back_right;
+   _joint_state_msg.position[3] = wheel_positions.back_left;
+
+   _joint_state_msg.velocity[0] = wheel_rotations.front_left;
+   _joint_state_msg.velocity[1] = wheel_rotations.front_right;
+   _joint_state_msg.velocity[2] = wheel_rotations.back_right;
+   _joint_state_msg.velocity[3] = wheel_rotations.back_left;
+
+   if(_enable_lift_control)
+   {
+      // TODO
+   }
+
+   _joint_state_msg.header.stamp = ros::Time::now();
+
+   _pub_joint_state.publish(_joint_state_msg);
+}
+
+
+void BaseControllerROS::publishBaseStatus()
+{
+   // get drive data
+   MecanumVel odom_vel;
+   MecanumPose odom_pose_increment;
+   MecanumWheelData wheel_positions;
+   MecanumWheelData wheel_velocities;
+   _mecanum_drive.getOdomComplete(odom_vel, odom_pose_increment, wheel_positions, wheel_velocities);
+  
+   // update pose
+   _odom_pose.updatePoseFromIncrement(odom_pose_increment);
+   publishOdomMsg(odom_vel, _odom_pose);
+
+   // eventually publish odom TF
+   if(_enable_odom_tf)
+      {publishOdomTF(_odom_pose);}
+   
+   // eventually publish joint states
+   if(_enable_joint_state_publisher)
+      {publishJointStates(wheel_positions, wheel_velocities);}
+   
+   // TODO: lift?
+}
+
 
 void BaseControllerROS::publishOdom()
 {
@@ -477,12 +613,12 @@ void BaseControllerROS::main_loop()
       {
          ros::spinOnce();
          publishOdom();
-         if(_lift_control_enabled) publishLiftPos();
+         if(_enable_lift_control) publishLiftPos();
 
          if(checkStatus())
          {
             checkAndApplyCmdVel();
-            if(_lift_control_enabled) checkAndApplyCmdLift();
+            if(_enable_lift_control) checkAndApplyCmdLift();
          }
 
          _loop_rate_hz.sleep();
