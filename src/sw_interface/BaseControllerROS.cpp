@@ -612,7 +612,8 @@ void BaseControllerROS::main_loop()
       while(ros::ok())
       {
          ros::spinOnce();
-         publishOdom();
+         //publishOdom();
+         publishBaseStatus();
          if(_enable_lift_control) publishLiftPos();
 
          if(checkStatus())
