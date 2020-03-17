@@ -12,6 +12,7 @@ find_package(catkin REQUIRED
     roscpp
     rospy
     tf
+    sensor_msgs
     message_generation
     evo_dcdc_shield_interface
     evo_tof_board_interface
