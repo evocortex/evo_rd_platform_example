@@ -177,19 +177,19 @@ add_dependencies(tof_controller_node ${catkin_EXPORTED_TARGETS}
 
 target_link_libraries(dcdc_controller_node
    ${catkin_LIBRARIES}
-   evo_mbed_tools
+   evo-mbed-tools
    pthread
  )
 
 target_link_libraries(base_controller_node
    ${catkin_LIBRARIES}
-   evo_mbed_tools
+   evo-mbed-tools
    pthread
  )
 
 target_link_libraries(tof_controller_node
    ${catkin_LIBRARIES}
-   evo_mbed_tools
+   evo-mbed-tools
    pthread
  )
 
