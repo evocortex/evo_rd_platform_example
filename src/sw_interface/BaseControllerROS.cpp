@@ -470,9 +470,7 @@ void BaseControllerROS::checkAndApplyCmdVel()
    // Check if lift drive is moving -> ignore commands
    if(_lift_moving)
    {
-      _cmd_vel._x_ms     = 0.0;
-      _cmd_vel._y_ms     = 0.0;
-      _cmd_vel._yaw_rads = 0.0;
+      _cmd_vel = MecanumVel();
       return;
    }
 
@@ -482,11 +480,11 @@ void BaseControllerROS::checkAndApplyCmdVel()
       evo::log::get() << _logger_prefix
                       << "cmd vel timeout detected! stopping robot.." << evo::warn;
       MecanumVel zero;
-      _mecanum_drive.setTargetSpeed(zero);
+      _mecanum_drive.setCmdVel(zero);
    }
    else
    {
-      _mecanum_drive.setTargetSpeed(_cmd_vel);
+      _mecanum_drive.setCmdVel(_cmd_vel);
    }
 }
 
@@ -518,7 +516,7 @@ void BaseControllerROS::checkAndApplyCmdLift()
    if(_lift_moving && !_lift_moving_strd)
    {
       MecanumVel zero;
-      _mecanum_drive.setTargetSpeed(zero);
+      _mecanum_drive.setCmdVel(zero);
 
       _motor_handler.disableAllDriveMotors();
    }
@@ -534,7 +532,7 @@ void BaseControllerROS::checkAndApplyCmdLift()
          _motor_handler.enableAllDriveMotors();
       }
 
-      _mecanum_drive.setTargetSpeed(zero);
+      _mecanum_drive.setCmdVel(zero);
    }
 
    _lift_moving_strd = _lift_moving;
