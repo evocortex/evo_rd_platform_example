@@ -153,6 +153,12 @@ add_executable(base_controller_node
     src/sw_interface/BaseControllerROS.cpp
     include/sw_interface/BaseControllerROS.h)
 
+add_executable(sim_base_controller_node
+    src/node/EvoSimBaseControllerNode.cpp
+
+    src/sw_interface/SimBaseControllerROS.cpp
+    include/sw_interface/SimBaseControllerROS.h)
+
 add_executable(tof_controller_node
     src/node/EvoToFControllerNode.cpp
 
@@ -172,6 +178,7 @@ add_executable(tof_controller_node
 
 add_dependencies(dcdc_controller_node ${catkin_EXPORTED_TARGETS})
 add_dependencies(base_controller_node ${catkin_EXPORTED_TARGETS})
+add_dependencies(sim_base_controller_node ${catkin_EXPORTED_TARGETS})
 add_dependencies(tof_controller_node ${catkin_EXPORTED_TARGETS} 
                                      ${PROJECT_NAME}_generate_messages_cpp)
 
@@ -182,6 +189,12 @@ target_link_libraries(dcdc_controller_node
  )
 
 target_link_libraries(base_controller_node
+   ${catkin_LIBRARIES}
+   evo-mbed-tools
+   pthread
+ )
+
+ target_link_libraries(sim_base_controller_node
    ${catkin_LIBRARIES}
    evo-mbed-tools
    pthread
