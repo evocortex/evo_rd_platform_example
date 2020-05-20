@@ -26,15 +26,6 @@
  *
  */
 
-/*  REV
- *  WHA STYLE: Include the namespace into the guard define name, e.g. "EVO_BASECONTROLLERROS_H"?
- *  MPP STYLE: Suggestion
- *             Use more underscores for the include guard to improve readability.
- * 
- *               EVO_BASE_CONTROLLER_ROS_H
- * 
- * HEN INFO: Or use #pragma once (sadly is not defined as c++ standard, though most compiler support it, reported to be faster)
- */
 #ifndef BASECONTROLLERROS_H
 #define BASECONTROLLERROS_H
 
@@ -55,21 +46,13 @@
 #include "std_msgs/Bool.h"
 #include "std_msgs/Int8.h"
 #include "std_msgs/Float32.h"
+#include <string>
+#include <vector>
 
 namespace evo {
 
 class BaseControllerROS
 {
-  /* REV
-   * MPP STYLE: * Suggestion
-   *              Public members first because they are the interesting part for any
-   *              client of this header.
-   *            * Missing documentation for public members.
-   *            * This class has an awful lot of member variables.
-   *              Suggestions: Remove superfluous ones. Try to cluster others.
-   * MPP INFO: Dependence on transitive includes potentially problematic?
-   *           Examples: Usage of std::string without #include <string> 
-   */
  private:
    std::string _logger_prefix;
 

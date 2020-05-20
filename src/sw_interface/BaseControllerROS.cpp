@@ -22,12 +22,6 @@
  *
  */
 
-/* REV
- * MPP INFO: * Does this header need to be public?
- *           * If yes, the directory sw_interface diverges from the standard ROS
- *             package layout.
- *             See: http://wiki.ros.org/Packages
- */
 #include "sw_interface/BaseControllerROS.h"
 
 namespace evo {
@@ -191,12 +185,6 @@ void BaseControllerROS::init()
    {
       _sub_cmd_lift = _nh.subscribe<std_msgs::Int8>(topic_sub_cmd_lift, 1, &BaseControllerROS::cbCmdLift, this);
 
-      /* REV
-       * MPP INFO: * Prefer prefix increment operators over their postfix versions.
-       *           * Suggestion
-       *             Declaration of position_pub potentially superfluous. Use _nh.advertise() directly as argument
-       *             for push_back(). Avoids a copy operation.
-       */
       const unsigned int num_lift = _lift_controller.getPositionVec().size();
       for(auto idx = 0u; idx < num_lift; idx++)
       {
@@ -227,15 +215,7 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
 
    // check if the next motorshield exists
    paramPrefix = "ms" + std::to_string(controller_id);
-   /* REV
-    * MPP INFO: Suggestion
-    *           Simplification for the next 4 lines:
-    * 
-    *             bool enable_mc = false;
-    *             while(privateNh.param(paramPrefix + "/enable", enable_mc, false))
-    *             {
-    *                evo::log::get() ...
-    */
+
    while(privateNh.hasParam(paramPrefix + "/enable"))
    {
       /*  REV
@@ -286,28 +266,7 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
 
          // load params for two motors
          /* REV
-          * MPP INFO: * for loop condition is a signed unsigned comparission.
-          *           * Suggestion to simplify motor configuration retrieval
-          *             Setup the map layout while defining the param_map variable
-          *             with the help of an initializer list:
-          * 
-          *               std::map<std::string, double> param_map({
-          *                 {"type",      0.},
-          *                 {"ctrl_mode", 0.},
-          *                 ...});
-          * 
-          *             Use the param() function with a default value to retrieve
-          *             the parameters:
-          * 
-          *               if(privateNh.param(paramName, param.second, 0.))
-          *               {
-          *                 ...
-          * 
-          *             With that you can drop the parameter existence check with hasParam()
-          *             and you do not need to reset the values of param_map in every loop
-          *             cycle.
-          *           * An unordered_map may be a better choice here since none of the
-          *             advantages of map are used.
+          * MPP INFO: * +++ for loop condition is a signed unsigned comparission. -> TODO MMA
           */
          for(int motor_id = 0; motor_id < mc_config.n_motors; motor_id++)
          {
@@ -409,19 +368,13 @@ void BaseControllerROS::publishOdom()
    odom.pose.pose.position.x     = _odom_pose._x_m;
    odom.pose.pose.position.y     = _odom_pose._y_m;
 
-   /*  REV
-    *  WHA INFO: pose_quaternion. The first letter "n" is missing.
-    */
-   tf::Quaternion pose_quaterion = tf::createQuaternionFromYaw(_odom_pose._yaw_rad);
-   odom.pose.pose.orientation.w  = pose_quaterion.getW();
-   odom.pose.pose.orientation.y  = pose_quaterion.getY();
-   odom.pose.pose.orientation.z  = pose_quaterion.getZ();
-   odom.pose.pose.orientation.x  = pose_quaterion.getX();
+   tf::Quaternion pose_quaternion = tf::createQuaternionFromYaw(_odom_pose._yaw_rad);
+   odom.pose.pose.orientation.w   = pose_quaternion.getW();
+   odom.pose.pose.orientation.y   = pose_quaternion.getY();
+   odom.pose.pose.orientation.z   = pose_quaternion.getZ();
+   odom.pose.pose.orientation.x   = pose_quaternion.getX();
 
    // covariances
-   /* REV
-    * MPP INFO: const qualifiers pointless.
-    */
    const double cpx   = _mecanum_covariance.cov_pos_x;
    const double cpy   = _mecanum_covariance.cov_pos_y;
    const double cpyaw = _mecanum_covariance.cov_pos_yaw;
@@ -429,9 +382,6 @@ void BaseControllerROS::publishOdom()
    const double cvy   = _mecanum_covariance.cov_vel_y;
    const double cvyaw = _mecanum_covariance.cov_vel_yaw;
 
-   /*  REV
-    *  WHA STYLE: If this is a 6x6 diagonal matrix, this should look like a 6x6 diagonal matrix.
-    */
    odom.twist.covariance = {cpx, 0.0, 0.0, 0.0, 0.0, 0.0,   0.0, cpy, 0.0,
                             0.0, 0.0, 0.0, 0.0, 0.0, cpyaw, 0.0, 0.0, 0.0,
                             0.0, 0.0, 0.0, cvx, 0.0, 0.0,   0.0, 0.0, 0.0,
@@ -446,7 +396,7 @@ void BaseControllerROS::publishOdom()
    {
       tf::StampedTransform tf_odom;
       tf_odom.setOrigin(tf::Vector3(_odom_pose._x_m, _odom_pose._y_m, 0));
-      tf_odom.setRotation(pose_quaterion);
+      tf_odom.setRotation(pose_quaternion);
       tf_odom.frame_id_       = _odom_frame_id;
       tf_odom.child_frame_id_ = _odom_child_frame_id;
       tf_odom.stamp_          = odom.header.stamp;
@@ -471,23 +421,12 @@ void BaseControllerROS::publishLiftPos()
 {
    const std::vector<float> positions = _lift_controller.getPositionVec();
    unsigned int idx                   = 0u;
-   /* REV
-    * MPP INFO: Suggestion
-    *           Use an index based loop instead of a range base one. This would
-    *           make things bit clearer since you are iterating over two std::vectors
-    *           in the same way.
-    */
    for(auto& pos : positions)
    {
       std_msgs::Float32 data;
       data.data = pos;
       _pub_lift_pos_vec[idx++].publish(data);
    }
-   /* REV
-    * MPP STYLE: Output really needed? Slows down the main processing loop.
-    *            Especially the flushing part of std::endl.
-    */
-   std::cout << std::endl;
 }
 
 void BaseControllerROS::cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift)
@@ -508,15 +447,6 @@ void BaseControllerROS::checkAndApplyCmdVel()
    }
 
    // check timestamp
-   /* REV
-    * MPP INFO: Suggestion
-    *           Turn _timeout_cmd_vel into a ros::Duration. This would make 
-    *           writing this if condition easier and its intent clearer:
-    * 
-    *             ros::Time::now() > (_stamp_cmd_vel + _timeout_cmd_vel)
-    * 
-    *           Can also be applied to _timeout_cmd_lift.
-    */
    if(ros::Time::now().toSec() > (_stamp_cmd_vel.toSec() + _timeout_cmd_vel))
    {
       evo::log::get() << _logger_prefix
@@ -530,10 +460,6 @@ void BaseControllerROS::checkAndApplyCmdVel()
    }
 }
 
-/* REV
- * MPP STYLE: Member variable _lift_moving_strd only used in this function.
- *            Suggestion: Turn it into static local variable.
- */
 void BaseControllerROS::checkAndApplyCmdLift()
 {
    // check timestamp
@@ -547,30 +473,17 @@ void BaseControllerROS::checkAndApplyCmdLift()
    }
    else
    {
-      /* REV
-       * MPP INFO: Shorter: _lift_moving = (_cmd_lift != 0);
-       */
-      if(_cmd_lift != 0)
-      {
-         _lift_moving = true;
-      }
-      else
-      {
-         _lift_moving = false;
-      }
-
+      _lift_moving = _cmd_lift != 0;
       _lift_controller.setMovingDirection(_cmd_lift);
    }
 
 
    /*  REV
-    *  WHA STYLE: As _lift_moving_strd seems to be the old _lift_moving value, this should be an edge detection.
-    *             1. What does "_strd" mean? Why not "_old" or something similar?
-    *      INFO:  2. Why try exactly 2 times to reenable the drive motors?
-    *             3. Why is there no error message after the second attempt,
+    *             +++ 1. What does "_strd" mean? Why not "_old" or something similar? -> @TODO @MBA stored
+    *      INFO:  +++ 2. Why try exactly 2 times to reenable the drive motors?
+    *             +++ 3. Why is there no error message after the second attempt, 
     *                considering that there will be no next attempt without another edge? (checkStatus() will reenable them?)
-    *             4. Why not set the speed to zero first, then enable the drives?
-    *             5. For future code formatting: Format change commits should probably not be mixed with "real" commits
+    *             -> @TODO @MBA
     */
 
    if(_lift_moving && !_lift_moving_strd)
@@ -626,14 +539,6 @@ signal?" << evo::error; enable_signal_off.data = true;
 }
 */
 
-/* REV
- * MPP STYLE: Member variable _error_present only used in this function.
- *            Suggestion: Turn it into a (static) local variable.
- * MPP INFO: Suggestion
- *           Assign the value of _error_present to enable_signal_off.data
- *           right before publishing the message. Spares you an assignment
- *           and makes things a bit clearer.
- */
 const bool BaseControllerROS::checkStatus()
 {
    std_msgs::Bool enable_signal_off;
@@ -652,12 +557,11 @@ const bool BaseControllerROS::checkStatus()
    }
 
    /*  REV
-    *  WHA STYLE: It is not quite clear whether disabling all motors sets the handler to a valid status, 
-    *             therefore leading to the else branch.
-    *      INFO:  As we only detect an error and create the edge ourselves by toggling the bool,
-    *             I personally wouldn't quite call this edge detection.
-    *  MPP INFO: * Why wait an entire loop cycle before handling the error? 
-    *            * Expression "falling edge detection" makes no sense.
+    *  WHA STYLE: +++ It is not quite clear whether disabling all motors sets the handler to a valid status, 
+    *             therefore leading to the else branch. -> TODO MBA clean up code
+    *      INFO:  +++ As we only detect an error and create the edge ourselves by toggling the bool,
+    *             I personally wouldn't quite call this edge detection. -> See below
+    *  MPP INFO:  +++ Expression "falling edge detection" makes no sense. -> TODO MBA: better name instead of "falling edge detection"
     */
    // falling edge detection for error status to re-enable motors
    else if(_error_present)
@@ -665,10 +569,8 @@ const bool BaseControllerROS::checkStatus()
       _error_present = false;
 
       /*  REV
-       *  WHA STYLE: If there is a comment admitting that this is a hack, I would like to know more 
-       *             about why this is a hack and why this hack is necessary.
-       *  MPP INFO: Sleep disrupts main loop. Program will not react to anything during this period.
-       *            Is this an acceptable behavior?
+       *  WHA STYLE: +++ If there is a comment admitting that this is a hack, I would like to know more 
+       *             about why this is a hack and why this hack is necessary. -> TODO MBA
        */
 
       // Small hack
