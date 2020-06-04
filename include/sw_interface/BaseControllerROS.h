@@ -8,43 +8,17 @@
 
 /**
  * @file BaseControllerROS.h
-<<<<<<< HEAD
- * //  REV
- * //  WHA STYLE: wrong author
- * // review: author intern 3 characters (First from name, second and third from surname)
- * @author evocortex (info@evocortex.com) - MMA
- *
- * //  REV
- * //  WHA STYLE: Proposal: "Interface class for accessing CAN motor controls using ROS"
- * @brief Interface class to bring the CAN motor stuff into ROS
-=======
  * @author evocortex (info@evocortex.com) - MMA, MBA
  *
  * @brief Base Controller Interface for ROS and EvoRobot com
->>>>>>> devel
  *
  * @version 0.2
  * @date 2020-06-03
  *
-<<<<<<< HEAD
- * //  REV
- * //  WHA STYLE: Year of creation or range of years during which this file was edited?
- * @copyright Copyright (c) 2019 Evocortex GmbH
-=======
  * @copyright Copyright (c) 2020 Evocortex GmbH
->>>>>>> devel
  *
  */
 
-/*  REV
- *  WHA STYLE: Include the namespace into the guard define name, e.g. "EVO_BASECONTROLLERROS_H"?
- *  MPP STYLE: Suggestion
- *             Use more underscores for the include guard to improve readability.
- * 
- *               EVO_BASE_CONTROLLER_ROS_H
- * 
- * HEN INFO: Or use #pragma once (sadly is not defined as c++ standard, though most compiler support it, reported to be faster)
- */
 #ifndef BASECONTROLLERROS_H
 #define BASECONTROLLERROS_H
 
@@ -71,16 +45,6 @@ namespace evo {
 
 class BaseControllerROS
 {
-  /* REV
-   * MPP STYLE: * Suggestion
-   *              Public members first because they are the interesting part for any
-   *              client of this header.
-   *            * Missing documentation for public members.
-   *            * This class has an awful lot of member variables.
-   *              Suggestions: Remove superfluous ones. Try to cluster others.
-   * MPP INFO: Dependence on transitive includes potentially problematic?
-   *           Examples: Usage of std::string without #include <string> 
-   */
  private:
    std::string _logger_prefix;
 
