@@ -8,6 +8,7 @@
 
 /**
  * @file BaseControllerROS.h
+<<<<<<< HEAD
  * //  REV
  * //  WHA STYLE: wrong author
  * // review: author intern 3 characters (First from name, second and third from surname)
@@ -16,13 +17,22 @@
  * //  REV
  * //  WHA STYLE: Proposal: "Interface class for accessing CAN motor controls using ROS"
  * @brief Interface class to bring the CAN motor stuff into ROS
+=======
+ * @author evocortex (info@evocortex.com) - MMA, MBA
  *
- * @version 0.1
- * @date 2019-08-14
+ * @brief Base Controller Interface for ROS and EvoRobot com
+>>>>>>> devel
  *
+ * @version 0.2
+ * @date 2020-06-03
+ *
+<<<<<<< HEAD
  * //  REV
  * //  WHA STYLE: Year of creation or range of years during which this file was edited?
  * @copyright Copyright (c) 2019 Evocortex GmbH
+=======
+ * @copyright Copyright (c) 2020 Evocortex GmbH
+>>>>>>> devel
  *
  */
 
@@ -55,6 +65,7 @@
 #include "std_msgs/Bool.h"
 #include "std_msgs/Int8.h"
 #include "std_msgs/Float32.h"
+#include "sensor_msgs/JointState.h"
 
 namespace evo {
 
@@ -80,7 +91,6 @@ class BaseControllerROS
    MecanumDrive _mecanum_drive;
    MecanumCovariance _mecanum_covariance;
 
-   bool _mecanum_inverted;
    double _timeout_cmd_vel;
    ros::Time _stamp_cmd_vel;
    MecanumVel _cmd_vel;
@@ -94,7 +104,7 @@ class BaseControllerROS
    double _timeout_cmd_lift;
    ros::Time _stamp_cmd_lift;
    int8_t _cmd_lift;
-   bool _lift_control_enabled;
+   bool _enable_lift_control;
 
    // ROS
    ros::NodeHandle _nh;
@@ -105,6 +115,11 @@ class BaseControllerROS
    std::vector<ros::Publisher> _pub_lift_pos_vec;
 
    ros::Rate _loop_rate_hz;
+
+   // Joint state publisher 
+   bool _enable_joint_state_publisher;
+   ros::Publisher _pub_joint_state;
+   sensor_msgs::JointState _joint_state_msg;
 
    // TF
    bool _enable_odom_tf;
@@ -119,7 +134,7 @@ class BaseControllerROS
  public:
    BaseControllerROS();
 
-   void init();
+   bool init();
    std::vector<MotorShieldConfig> loadConfigROS(ros::NodeHandle& privateNh);
   /* REV
    * MPP STYLE: * Next two functions have a different code style.
@@ -129,10 +144,19 @@ class BaseControllerROS
    void main_loop();
    const bool checkStatus(void);
 
+   void publishBaseStatus();
+
+   // drives
    void publishOdom();
+   void publishOdomMsg(const MecanumVel& odom_vel, const MecanumPose& odom_pose);
+   void publishOdomTF(const MecanumPose& odom_pose);
+   void publishJointStates(const MecanumWheelData& wheel_positions, const MecanumWheelData& wheel_rotations);
+
+
    void cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel);
    void checkAndApplyCmdVel();
 
+   // lift
    void publishLiftPos();
    void cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift);
    void checkAndApplyCmdLift();

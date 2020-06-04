@@ -5,20 +5,14 @@
 
 /**
  * @file BaseControllerROS.cpp
- * //  REV
- * //  WHA STYLE: wrong author 
- * @author evocortex (info@evocortex.com)
+ * @author evocortex (info@evocortex.com) - MMA, MBA
  *
- * //  REV
- * //  WHA STYLE: Proposal: "Interface class for accessing CAN motor controls using ROS"
- * @brief Interface class to bring the CAN motor stuff into ROS
+ * @brief Base Controller Interface for ROS and EvoRobot com
  *
- * @version 0.1
- * @date 2019-08-14
- * 
- * //  REV
- * //  WHA STYLE: Year of creation or range of years during which this file was edited?
- * @copyright Copyright (c) 2019 Evocortex GmbH
+ * @version 0.2
+ * @date 2020-06-03
+ *
+ * @copyright Copyright (c) 2020 Evocortex GmbH
  *
  */
 
@@ -50,12 +44,12 @@ namespace evo {
  *  MPP ERROR: Members are not initialized in the order in which they are declared.
  */
 BaseControllerROS::BaseControllerROS() :
-    _logger_prefix("BaseControllerROS: ")
-    ,_lift_moving(false)
-    ,_lift_moving_strd(false)
-    ,_error_present(false)
-    ,_is_initialized(false)
-    ,_loop_rate_hz(50)
+    _logger_prefix("BaseControllerROS: "), 
+    _lift_moving(false),
+    _lift_moving_strd(false), 
+    _error_present(false), 
+    _is_initialized(false),
+    _loop_rate_hz(50)
 {
    evo::log::init("");
 }
@@ -74,7 +68,7 @@ BaseControllerROS::BaseControllerROS() :
  *                         since it is used in other member function.
  *  +++ HEN INFO: Return success status or error code to give the caller the possibility to react
  */
-void BaseControllerROS::init()
+bool BaseControllerROS::init()
 {
    evo::log::get() << _logger_prefix << "start init process!" << evo::info;
 
@@ -91,18 +85,15 @@ void BaseControllerROS::init()
     *             privateNh.param<std::string>("...", con_interface_name, "can-motor");
     */
    std::string can_interface_name;
-   privateNh.param("can_interface_name", can_interface_name,
-                   std::string("can-motor"));
+   privateNh.param("can_interface_name", can_interface_name, std::string("can-motor"));
    if(!_motor_handler.initCanInterface(can_interface_name))
    {
       evo::log::get() << _logger_prefix
                       << "initialization of the CAN interface failed!" << evo::error;
       evo::log::get() << _logger_prefix << "Check if the interfacename ["
                       << can_interface_name << "] is correct!" << evo::error;
-      evo::log::get() << _logger_prefix << "--> Shutdown" << evo::error;
-
-      // TODO REV no exit() inside class
-      exit(1);
+      evo::log::get() << _logger_prefix << "--> Exit" << evo::error;
+      return false;
    }
    _motor_handler.setConfig(loadConfigROS(privateNh));
    success &= _motor_handler.initFromConfig();
@@ -110,22 +101,10 @@ void BaseControllerROS::init()
    success &= _motor_handler.enableAllMotors();
 
    // parameters for the mecanum drive
-   /* REV
-    * MPP STYLE: Suggestion
-    *            Use a new line for every declared variable. Makes things easier to read.
-    *            Especially when they are initialized at the same time.
-    * 
-    *            double wheel_radius_in_m,
-    *                   wheel_distance_front_back_in_m,
-    *                   wheel_distance_left_right_in_m;
-    */
-   double wheel_radius_in_m, wheel_distance_front_back_in_m,
-       wheel_distance_left_right_in_m;
+   double wheel_radius_in_m, wheel_distance_front_back_in_m, wheel_distance_left_right_in_m;
    privateNh.param("wheel_radius_in_m", wheel_radius_in_m, 0.0);
-   privateNh.param("wheel_distance_front_back_in_m", wheel_distance_front_back_in_m,
-                   0.0);
-   privateNh.param("wheel_distance_left_right_in_m", wheel_distance_left_right_in_m,
-                   0.0);
+   privateNh.param("wheel_distance_front_back_in_m", wheel_distance_front_back_in_m, 0.0);
+   privateNh.param("wheel_distance_left_right_in_m", wheel_distance_left_right_in_m, 0.0);
    _mecanum_drive.setWheelRadiusInM(wheel_radius_in_m);
    _mecanum_drive.setWheelDistanceFrontBackInM(wheel_distance_front_back_in_m);
    _mecanum_drive.setWheelDistanceLeftRightInM(wheel_distance_left_right_in_m);
@@ -135,7 +114,7 @@ void BaseControllerROS::init()
    {
       evo::log::get() << _logger_prefix << "init process not successful!"
                       << evo::error;
-      return;
+      return false;
    }
 
    // covariances
@@ -151,35 +130,59 @@ void BaseControllerROS::init()
    privateNh.param("debug_motor_mapping", debug_motor_mapping, false);
    if(debug_motor_mapping)
       _mecanum_drive.debugMotorMapping();
-   /* REV
-    * MPP STYLE: Member variable _mecanum_inverted is only used here. Superfluous?
-    */
-   privateNh.param("mecanum_inverted", _mecanum_inverted, false);
 
    // parameters for this class
-   std::string topic_sub_cmd_vel, topic_sub_cmd_lift, topic_pub_odom,
-       topic_pub_enable_signal_off;
+   std::string topic_sub_cmd_vel, topic_sub_cmd_lift, topic_pub_odom, topic_pub_enable_signal_off;
    double com_timeout_s, loop_rate_hz;
    privateNh.param("loop_rate_hz", loop_rate_hz, 50.0);
    _loop_rate_hz = ros::Rate(loop_rate_hz);
 
+   // regular topics
    privateNh.param("topic_pub_odom", topic_pub_odom, std::string("odom"));
-   privateNh.param("topic_pub_enable_signal_off", topic_pub_enable_signal_off,
-                   std::string("enable_signal_off"));
+   privateNh.param("topic_pub_enable_signal_off", topic_pub_enable_signal_off, std::string("enable_signal_off"));
    privateNh.param("topic_sub_cmd_vel", topic_sub_cmd_vel, std::string("cmd_vel"));
-   privateNh.param("topic_sub_cmd_lift", topic_sub_cmd_lift,
-                   std::string("cmd_lift"));
+   privateNh.param("topic_sub_cmd_lift", topic_sub_cmd_lift, std::string("cmd_lift"));
 
+   // timeouts
    privateNh.param("com_timeout_s", com_timeout_s, 0.1);
    privateNh.param("cmd_vel_timeout_s", _timeout_cmd_vel, 0.1);
    privateNh.param("cmd_lift_timeout_s", _timeout_cmd_lift, 0.5);
 
+   // odometry
    privateNh.param("enable_odom_tf", _enable_odom_tf, true);
    privateNh.param("odom_frame_id", _odom_frame_id, std::string("odom"));
-   privateNh.param("odom_child_frame_id", _odom_child_frame_id,
-                   std::string("base_footprint"));
+   privateNh.param("odom_child_frame_id", _odom_child_frame_id, std::string("base_footprint"));
 
-   privateNh.param("enable_lift_control", _lift_control_enabled, false);
+   privateNh.param("enable_lift_control", _enable_lift_control, false);
+
+   // toggle joint state publishing
+   privateNh.param("enable_joint_state_publisher", _enable_joint_state_publisher, false);
+   if(_enable_joint_state_publisher)
+   {
+      int n_joints = 0;
+      std::string topic_joint_states;
+      privateNh.param("topic_pub_joint_states", topic_joint_states, std::string("base_joint_states"));
+      _pub_joint_state = _nh.advertise<sensor_msgs::JointState>(topic_joint_states, 1);
+      _joint_state_msg.name.push_back("joint_wheel_front_left");
+      _joint_state_msg.name.push_back("joint_wheel_front_right");
+      _joint_state_msg.name.push_back("joint_wheel_back_right");
+      _joint_state_msg.name.push_back("joint_wheel_back_left");
+      n_joints += 4;
+
+      if(_enable_lift_control)
+      {
+         // TODO
+      }
+      else
+      {
+         _joint_state_msg.position.resize(n_joints);
+         _joint_state_msg.velocity.resize(n_joints);
+         // MMA FEATURE: get effort from motorcontrollers?
+
+         // not implemented atm
+         //_joint_state_msg.effort.resize(n_joints);
+      }
+   }
 
    // setup connections
    _sub_cmd_vel = _nh.subscribe<geometry_msgs::Twist>(topic_sub_cmd_vel, 1, &BaseControllerROS::cbCmdVel, this);
@@ -187,7 +190,7 @@ void BaseControllerROS::init()
    _pub_enable_signal_off = _nh.advertise<std_msgs::Bool>(topic_pub_enable_signal_off, 1);
 
    // enable lift if necessary
-   if(_lift_control_enabled)
+   if(_enable_lift_control)
    {
       _sub_cmd_lift = _nh.subscribe<std_msgs::Int8>(topic_sub_cmd_lift, 1, &BaseControllerROS::cbCmdLift, this);
 
@@ -210,41 +213,54 @@ void BaseControllerROS::init()
    _is_initialized = true;
 }
 
-/*  REV
- *  WHA STYLE: Why not in a single line? -> multiple lines make sense in some situations, but this should be consistent
- *  MPP STYLE: * Function could be declared const since it does not change member variables.
- *             * Inconsistent code style for variable names.
- */
-std::vector<MotorShieldConfig>
-BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
+std::vector<MotorShieldConfig> BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
 {
    std::vector<MotorShieldConfig> mc_config_ros;
    std::string paramName, paramPrefix;
-   int controller_id         = 1;
+   int motorshield_id        = 1;
    static const int n_motors = 2;
 
    std::map<std::string, double> param_map;
 
+   int init_n_shields = 0;
+   privateNh.param("init_n_motorshields", init_n_shields, 2);
+   evo::log::get() << _logger_prefix << "Loading config for " 
+                   << init_n_shields << " motorshields" <<
+   evo::info;
+
    // check if the next motorshield exists
-   paramPrefix = "ms" + std::to_string(controller_id);
-   /* REV
-    * MPP INFO: Suggestion
-    *           Simplification for the next 4 lines:
-    * 
-    *             bool enable_mc = false;
-    *             while(privateNh.param(paramPrefix + "/enable", enable_mc, false))
-    *             {
-    *                evo::log::get() ...
-    */
+   paramPrefix = "ms" + std::to_string(motorshield_id);
    while(privateNh.hasParam(paramPrefix + "/enable"))
    {
-      /*  REV
-       *  WHA STYLE: Name consistency: enable_mc <-> enable_ms <-> timeout_ms <-> _x_ms
-       */
+      // error prevention
+      if(motorshield_id > init_n_shields)
+      {
+         evo::log::get() << _logger_prefix
+                         << "param server contains enable for next ms-id"
+                         << ", but n-ms > init-n-ms! (" << motorshield_id << " > "
+                         << init_n_shields << ")" << evo::warn;
+         evo::log::get() << _logger_prefix
+                         << "do you want to include the next shield? (y/n)" << evo::warn;
+         char input;
+         std::cin >> input; 
+         try
+         {
+            if(std::tolower(input) != 'y')
+            {
+               evo::log::get() << _logger_prefix << "--> NO" << evo::info;
+               break;
+            }
+            evo::log::get() << _logger_prefix << "--> YES" << evo::info;
+         } 
+         catch(const std::exception& e)
+         {
+            evo::log::get() << e.what() << evo::error;
+         }
+      }
 
       bool enable_mc = false;
       privateNh.getParam(paramPrefix + "/enable", enable_mc);
-      evo::log::get() << _logger_prefix << "Enable ms" << controller_id << ": "
+      evo::log::get() << _logger_prefix << "Enable ms" << motorshield_id << ": "
                       << enable_mc << evo::info;
 
       if(enable_mc)
@@ -252,39 +268,29 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
          evo::log::get() << _logger_prefix << "--------------------------"
                          << evo::info;
          evo::log::get() << _logger_prefix << "Loading parameters for ms"
-                         << controller_id << evo::info;
+                         << motorshield_id << evo::info;
 
          // load mc param
-         MotorShieldConfig mc_config;
-         mc_config.id   = controller_id;
-
-         /*  REV
-          *  WHA STYLE:    if(!privateNh.hasParam(..)){timeout_ms = 10;} else {privateNh.getParam(...)} would be FAR more readable
-          *                see further below for an example
-          *  MPP STYLE: Suggestion
-          *             Use the param() function instead since it allows you to specify
-          *             a default value for timeout_ms.
-          */
+         MotorShieldConfig ms_config;
+         ms_config.id   = motorshield_id;
          int timeout_ms = 10;
          if(!privateNh.getParam(paramPrefix + "/timeout_ms", timeout_ms))
          {
             timeout_ms = 10;
             evo::log::get() << _logger_prefix
                             << "no timeout_ms parameter given! using default: "
-                            << mc_config.timeout_ms << evo::warn;
+                            << ms_config.timeout_ms << evo::warn;
          }
-         mc_config.timeout_ms = static_cast<uint32_t>(timeout_ms);
+         ms_config.timeout_ms = static_cast<uint32_t>(timeout_ms);
          // could also be loaded as param
-
          /*  REV
           *  WHA STYLE: n_motors is used one single time: to initialise a config value. 
           *             This way, "magic numbers" in the function body are avoided, which is good.
           *             Using this style of initialisation more often would improve maintainability and readability.
           */
-         mc_config.n_motors = n_motors;
-         mc_config.motor_configs.clear();
+         ms_config.n_motors = n_motors;
 
-         // load params for two motors
+               // load params for two motors
          /* REV
           * MPP INFO: * for loop condition is a signed unsigned comparission.
           *           * Suggestion to simplify motor configuration retrieval
@@ -308,8 +314,13 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
           *             cycle.
           *           * An unordered_map may be a better choice here since none of the
           *             advantages of map are used.
+          * 
+          * MMA: i want to print something which is also what causes the code to blow up
           */
-         for(int motor_id = 0; motor_id < mc_config.n_motors; motor_id++)
+
+         // load params for two motors
+         ms_config.motor_configs.clear();
+         for(int motor_id = 0; motor_id < ms_config.n_motors; motor_id++)
          {
             evo::log::get() << _logger_prefix << "Loading parameters for motor"
                             << motor_id << evo::info;
@@ -320,6 +331,7 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
             param_map["ki"]            = 0.0;
             param_map["kd"]            = 0.0;
             param_map["pwm_limit"]     = 0.0;
+            param_map["rpm_limit"]     = 0.0;
             param_map["gear_ratio"]    = 0.0;
             param_map["encoder_res"]   = 0.0;
             param_map["adc_conv"]      = 0.0;
@@ -363,60 +375,50 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
             motor_config.encoder_res          = param_map.at("encoder_res");
             motor_config.gear_ratio           = param_map.at("gear_ratio");
             motor_config.pwm_limit            = param_map.at("pwm_limit");
+            motor_config.rpm_limit            = param_map.at("rpm_limit");
             motor_config.adc_conv_mm_per_tick = param_map.at("adc_conv");
             motor_config.adc_offs_mm          = param_map.at("adc_offs");
 
             motor_config.motor_mapping =
                 static_cast<uint8_t>(param_map.at("motor_mapping"));
-            mc_config.motor_configs.push_back(motor_config);
+            ms_config.motor_configs.push_back(motor_config);
          }
-         mc_config_ros.push_back(mc_config);
+         mc_config_ros.push_back(ms_config);
       }
-      ++controller_id;
-      paramPrefix = "ms" + std::to_string(controller_id);
+      ++motorshield_id;
+      paramPrefix = "ms" + std::to_string(motorshield_id);
    }
    return mc_config_ros;
 }
 
-/* REV
- * MPP STYLE: * Member variable _odom_pose only used in this function.
- *              Suggestion: Turn it into a local variable.
- *            * Suggestion
- *              Turn the odom message into a member variable and set it up
- *              in the init() function. This would make the member variables
- *              _odom_frame_id, _odom_child_frame_id and _mecanum_covariance
- *              obsolete.
- */
-void BaseControllerROS::publishOdom()
+void BaseControllerROS::publishOdomMsg(const MecanumVel& odom_vel,
+                                       const MecanumPose& odom_pose)
 {
-   MecanumVel odom_raw = _mecanum_drive.getOdom();
-
+   // create odom nav msg
    nav_msgs::Odometry odom;
-   odom.header.stamp          = ros::Time::now();
+
+   // header
+   odom.header.stamp    = ros::Time::now();
    odom.header.frame_id = _odom_frame_id;
-   odom.child_frame_id = _odom_child_frame_id;
+   odom.child_frame_id  = _odom_child_frame_id;
 
-   odom.twist.twist.linear.x  = odom_raw._x_ms;
-   odom.twist.twist.linear.y  = odom_raw._y_ms;
-   odom.twist.twist.angular.z = odom_raw._yaw_rads;
+   // pose
+   odom.pose.pose.position.x = odom_pose._x_m;
+   odom.pose.pose.position.y = odom_pose._y_m;
 
-   // add up to position - from vel
-   //_odom_pose.updatePoseFromVel(odom_raw, _loop_rate_hz.cycleTime().toSec());
+   // MMA ERROR: should we really use this function?
+   // MMA FEATURE: if we extend the functionality to lift and tilting, we have to
+   // change this anyways
+   tf::Quaternion pose_quaternion = tf::createQuaternionFromYaw(odom_pose._yaw_rad);
+   odom.pose.pose.orientation.w  = pose_quaternion.getW();
+   odom.pose.pose.orientation.y  = pose_quaternion.getY();
+   odom.pose.pose.orientation.z  = pose_quaternion.getZ();
+   odom.pose.pose.orientation.x  = pose_quaternion.getX();
 
-   // add up position - from increment
-   _odom_pose.updatePoseFromIncrement(_mecanum_drive.getPoseIncrement());
-
-   odom.pose.pose.position.x     = _odom_pose._x_m;
-   odom.pose.pose.position.y     = _odom_pose._y_m;
-
-   /*  REV
-    *  WHA INFO: pose_quaternion. The first letter "n" is missing.
-    */
-   tf::Quaternion pose_quaterion = tf::createQuaternionFromYaw(_odom_pose._yaw_rad);
-   odom.pose.pose.orientation.w  = pose_quaterion.getW();
-   odom.pose.pose.orientation.y  = pose_quaterion.getY();
-   odom.pose.pose.orientation.z  = pose_quaterion.getZ();
-   odom.pose.pose.orientation.x  = pose_quaterion.getX();
+   // twist
+   odom.twist.twist.linear.x  = odom_vel._x_ms;
+   odom.twist.twist.linear.y  = odom_vel._y_ms;
+   odom.twist.twist.angular.z = odom_vel._yaw_rads;
 
    // covariances
    /* REV
@@ -429,39 +431,89 @@ void BaseControllerROS::publishOdom()
    const double cvy   = _mecanum_covariance.cov_vel_y;
    const double cvyaw = _mecanum_covariance.cov_vel_yaw;
 
-   /*  REV
-    *  WHA STYLE: If this is a 6x6 diagonal matrix, this should look like a 6x6 diagonal matrix.
-    */
-   odom.twist.covariance = {cpx, 0.0, 0.0, 0.0, 0.0, 0.0,   0.0, cpy, 0.0,
-                            0.0, 0.0, 0.0, 0.0, 0.0, cpyaw, 0.0, 0.0, 0.0,
-                            0.0, 0.0, 0.0, cvx, 0.0, 0.0,   0.0, 0.0, 0.0,
-                            0.0, cvy, 0.0, 0.0, 0.0, 0.0,   0.0, 0.0, cvyaw};
+   odom.twist.covariance = {cpx, 0.0, 0.0, 0.0, 0.0, 0.0,   
+                            0.0, cpy, 0.0, 0.0, 0.0, 0.0, 
+                            0.0, 0.0, cpyaw, 0.0, 0.0, 0.0,
+                            0.0, 0.0, 0.0, cvx, 0.0, 0.0,   
+                            0.0, 0.0, 0.0, 0.0, cvy, 0.0, 
+                            0.0, 0.0, 0.0, 0.0, 0.0, cvyaw};
 
    odom.pose.covariance = odom.twist.covariance;
 
    _pub_odom.publish(odom);
+}
 
-   // Transform
-   if(_enable_odom_tf)
+void BaseControllerROS::publishOdomTF(const MecanumPose& odom_pose)
+{
+   tf::StampedTransform tf_odom;
+   // header
+   tf_odom.stamp_          = ros::Time::now();
+   tf_odom.frame_id_       = _odom_frame_id;
+   tf_odom.child_frame_id_ = _odom_child_frame_id;
+
+   // position
+   tf_odom.setOrigin(tf::Vector3(_odom_pose._x_m, _odom_pose._y_m, 0));
+
+   // rotation
+   tf::Quaternion pose_quaterion = tf::createQuaternionFromYaw(_odom_pose._yaw_rad);
+   tf_odom.setRotation(pose_quaterion);
+
+   _tf_pub_odom.sendTransform(tf_odom);
+}
+
+void BaseControllerROS::publishJointStates(const MecanumWheelData& wheel_positions,
+                                           const MecanumWheelData& wheel_rotations)
+{
+   _joint_state_msg.position[0] = wheel_positions.front_left;
+   _joint_state_msg.position[1] = wheel_positions.front_right;
+   _joint_state_msg.position[2] = wheel_positions.back_right;
+   _joint_state_msg.position[3] = wheel_positions.back_left;
+
+   _joint_state_msg.velocity[0] = wheel_rotations.front_left;
+   _joint_state_msg.velocity[1] = wheel_rotations.front_right;
+   _joint_state_msg.velocity[2] = wheel_rotations.back_right;
+   _joint_state_msg.velocity[3] = wheel_rotations.back_left;
+
+   if(_enable_lift_control)
    {
-      tf::StampedTransform tf_odom;
-      tf_odom.setOrigin(tf::Vector3(_odom_pose._x_m, _odom_pose._y_m, 0));
-      tf_odom.setRotation(pose_quaterion);
-      tf_odom.frame_id_       = _odom_frame_id;
-      tf_odom.child_frame_id_ = _odom_child_frame_id;
-      tf_odom.stamp_          = odom.header.stamp;
-      _tf_pub_odom.sendTransform(tf_odom);
+      // TODO
    }
+
+   _joint_state_msg.header.stamp = ros::Time::now();
+
+   _pub_joint_state.publish(_joint_state_msg);
+}
+
+void BaseControllerROS::publishBaseStatus()
+{
+   // get drive data
+   MecanumVel odom_vel;
+   MecanumPose odom_pose_increment;
+   MecanumWheelData wheel_positions;
+   MecanumWheelData wheel_velocities;
+   _mecanum_drive.getOdomComplete(odom_vel, odom_pose_increment, 
+                                 wheel_positions, wheel_velocities);
+
+   // update pose
+   _odom_pose.updatePoseFromIncrement(odom_pose_increment);
+   publishOdomMsg(odom_vel, _odom_pose);
+
+   // eventually publish odom TF
+   if(_enable_odom_tf)
+   {publishOdomTF(_odom_pose);}
+
+   // eventually publish joint states
+   if(_enable_joint_state_publisher)
+   {
+      publishJointStates(wheel_positions, wheel_velocities);
+   }
+
+   // TODO: lift?
 }
 
 void BaseControllerROS::cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel)
 {
    _stamp_cmd_vel     = ros::Time::now();
-
-   /*  REV
-    *  +++ WHA INFO: To the left, there is x_ms; to the right, just x. What do "ms" and "rads" mean? 
-    *            Velocity has the unit "meters per second", yet "ms" looks more like "milliseconds" or "meter times second".
-    */
    _cmd_vel._x_ms     = cmd_vel->linear.x;
    _cmd_vel._y_ms     = cmd_vel->linear.y;
    _cmd_vel._yaw_rads = cmd_vel->angular.z;
@@ -501,32 +553,20 @@ void BaseControllerROS::checkAndApplyCmdVel()
    // Check if lift drive is moving -> ignore commands
    if(_lift_moving)
    {
-      _cmd_vel._x_ms     = 0.0;
-      _cmd_vel._y_ms     = 0.0;
-      _cmd_vel._yaw_rads = 0.0;
+      _cmd_vel = MecanumVel();
       return;
    }
 
-   // check timestamp
-   /* REV
-    * MPP INFO: Suggestion
-    *           Turn _timeout_cmd_vel into a ros::Duration. This would make 
-    *           writing this if condition easier and its intent clearer:
-    * 
-    *             ros::Time::now() > (_stamp_cmd_vel + _timeout_cmd_vel)
-    * 
-    *           Can also be applied to _timeout_cmd_lift.
-    */
    if(ros::Time::now().toSec() > (_stamp_cmd_vel.toSec() + _timeout_cmd_vel))
    {
       evo::log::get() << _logger_prefix
                       << "cmd vel timeout detected! stopping robot.." << evo::warn;
       MecanumVel zero;
-      _mecanum_drive.setTargetSpeed(zero);
+      _mecanum_drive.setCmdVel(zero);
    }
    else
    {
-      _mecanum_drive.setTargetSpeed(_cmd_vel);
+      _mecanum_drive.setCmdVel(_cmd_vel);
    }
 }
 
@@ -576,7 +616,7 @@ void BaseControllerROS::checkAndApplyCmdLift()
    if(_lift_moving && !_lift_moving_strd)
    {
       MecanumVel zero;
-      _mecanum_drive.setTargetSpeed(zero);
+      _mecanum_drive.setCmdVel(zero);
 
       _motor_handler.disableAllDriveMotors();
    }
@@ -592,7 +632,7 @@ void BaseControllerROS::checkAndApplyCmdLift()
          _motor_handler.enableAllDriveMotors();
       }
 
-      _mecanum_drive.setTargetSpeed(zero);
+      _mecanum_drive.setCmdVel(zero);
    }
 
    _lift_moving_strd = _lift_moving;
@@ -698,17 +738,17 @@ void BaseControllerROS::main_loop()
       while(ros::ok())
       {
          ros::spinOnce();
-         publishOdom();
+         publishBaseStatus();
 
-         /*  REV
-          *  +++ WHA STYLE: Not really a fan of using if-clauses like this.
-          */
-         if(_lift_control_enabled) { publishLiftPos(); }
+         // MMA: replace in base status?
+         if(_enable_lift_control)
+         {publishLiftPos();}
 
          if(checkStatus())
          {
             checkAndApplyCmdVel();
-            if(_lift_control_enabled) checkAndApplyCmdLift();
+            if(_enable_lift_control)
+            {checkAndApplyCmdLift();}
          }
 
          _loop_rate_hz.sleep();
