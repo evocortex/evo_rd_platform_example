@@ -5,14 +5,14 @@
 
 /**
  * @file BaseControllerROS.cpp
- * @author evocortex (info@evocortex.com)
+ * @author evocortex (info@evocortex.com) - MMA, MBA
  *
- * @brief Interface class to bring the CAN motor stuff into ROS
+ * @brief Base Controller Interface for ROS and EvoRobot com
  *
- * @version 0.1
- * @date 2019-08-14
+ * @version 0.2
+ * @date 2020-06-03
  *
- * @copyright Copyright (c) 2019 Evocortex GmbH
+ * @copyright Copyright (c) 2020 Evocortex GmbH
  *
  */
 
@@ -21,8 +21,11 @@
 namespace evo {
 
 BaseControllerROS::BaseControllerROS() :
-    _logger_prefix("BaseControllerROS: "), _lift_moving(false),
-    _lift_moving_strd(false), _error_present(false), _is_initialized(false),
+    _logger_prefix("BaseControllerROS: "), 
+    _lift_moving(false),
+    _lift_moving_strd(false), 
+    _error_present(false), 
+    _is_initialized(false),
     _loop_rate_hz(50)
 {
    evo::log::init("");
@@ -38,15 +41,14 @@ bool BaseControllerROS::init()
 
    // parameters for the motor manager
    std::string can_interface_name;
-   privateNh.param("can_interface_name", can_interface_name,
-                   std::string("can-motor"));
+   privateNh.param("can_interface_name", can_interface_name, std::string("can-motor"));
    if(!_motor_handler.initCanInterface(can_interface_name))
    {
       evo::log::get() << _logger_prefix
                       << "initialization of the CAN interface failed!" << evo::error;
       evo::log::get() << _logger_prefix << "Check if the interfacename ["
                       << can_interface_name << "] is correct!" << evo::error;
-      evo::log::get() << _logger_prefix << "--> Shutdown" << evo::error;
+      evo::log::get() << _logger_prefix << "--> Exit" << evo::error;
       return false;
    }
    _motor_handler.setConfig(loadConfigROS(privateNh));
@@ -55,13 +57,10 @@ bool BaseControllerROS::init()
    success &= _motor_handler.enableAllMotors();
 
    // parameters for the mecanum drive
-   double wheel_radius_in_m, wheel_distance_front_back_in_m,
-       wheel_distance_left_right_in_m;
+   double wheel_radius_in_m, wheel_distance_front_back_in_m, wheel_distance_left_right_in_m;
    privateNh.param("wheel_radius_in_m", wheel_radius_in_m, 0.0);
-   privateNh.param("wheel_distance_front_back_in_m", wheel_distance_front_back_in_m,
-                   0.0);
-   privateNh.param("wheel_distance_left_right_in_m", wheel_distance_left_right_in_m,
-                   0.0);
+   privateNh.param("wheel_distance_front_back_in_m", wheel_distance_front_back_in_m, 0.0);
+   privateNh.param("wheel_distance_left_right_in_m", wheel_distance_left_right_in_m, 0.0);
    _mecanum_drive.setWheelRadiusInM(wheel_radius_in_m);
    _mecanum_drive.setWheelDistanceFrontBackInM(wheel_distance_front_back_in_m);
    _mecanum_drive.setWheelDistanceLeftRightInM(wheel_distance_left_right_in_m);
@@ -87,7 +86,6 @@ bool BaseControllerROS::init()
    privateNh.param("debug_motor_mapping", debug_motor_mapping, false);
    if(debug_motor_mapping)
       _mecanum_drive.debugMotorMapping();
-   privateNh.param("mecanum_inverted", _mecanum_inverted, false);
 
    // parameters for this class
    std::string topic_sub_cmd_vel, topic_sub_cmd_lift, topic_pub_odom, topic_pub_enable_signal_off;
@@ -165,8 +163,7 @@ bool BaseControllerROS::init()
    _is_initialized = true;
 }
 
-std::vector<MotorShieldConfig>
-BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
+std::vector<MotorShieldConfig> BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
 {
    std::vector<MotorShieldConfig> mc_config_ros;
    std::string paramName, paramPrefix;

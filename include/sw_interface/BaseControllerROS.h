@@ -5,14 +5,14 @@
 
 /**
  * @file BaseControllerROS.h
- * @author evocortex (info@evocortex.com)
+ * @author evocortex (info@evocortex.com) - MMA, MBA
  *
- * @brief Interface class to bring the CAN motor stuff into ROS
+ * @brief Base Controller Interface for ROS and EvoRobot com
  *
- * @version 0.1
- * @date 2019-08-14
+ * @version 0.2
+ * @date 2020-06-03
  *
- * @copyright Copyright (c) 2019 Evocortex GmbH
+ * @copyright Copyright (c) 2020 Evocortex GmbH
  *
  */
 
@@ -48,7 +48,6 @@ class BaseControllerROS
    MecanumDrive _mecanum_drive;
    MecanumCovariance _mecanum_covariance;
 
-   bool _mecanum_inverted;
    double _timeout_cmd_vel;
    ros::Time _stamp_cmd_vel;
    MecanumVel _cmd_vel;
