@@ -52,8 +52,9 @@
 <!-- Motor Types: 0 = no_type, 1=lift, 2=drive-->
 
 <group ns="$(arg NodeName)">
+  <param name="init_n_motorshields"     value="2"    />
   <group ns="ms1">
-    <param name="timeout_ms"              value="150"    />
+    <param name="timeout_ms"            value="150"    />
     	<param name="enable"              value="true"    />
 
     <group ns="motor0">
@@ -64,6 +65,7 @@
     	<param name="ki" 		            value="$(arg ki)"  />
     	<param name="kd" 		            value="0.0"    />
     	<param name="pwm_limit"         value="100.0"  />
+     	<param name="rpm_limit"         value="200.0"  />
     	<param name="gear_ratio"        value="22.4"  />
     	<param name="encoder_res"       value="1024.0"  />
       <param name="adc_conv"					value="0.0" />			
@@ -79,6 +81,7 @@
     	<param name="ki" 		            value="$(arg ki)"  />
     	<param name="kd" 		            value="0.0"    />
     	<param name="pwm_limit"         value="100.0"  />
+     	<param name="rpm_limit"         value="200.0"  />
     	<param name="gear_ratio"        value="22.4"  />
     	<param name="encoder_res"       value="1024.0"  />
       <param name="adc_conv"					value="0.0" />			
@@ -100,6 +103,7 @@
     	<param name="ki" 		            value="$(arg ki)"  />
     	<param name="kd" 		            value="0.0"    />
     	<param name="pwm_limit"         value="100.0"  />
+     	<param name="rpm_limit"         value="200.0"  />
     	<param name="gear_ratio"        value="22.4"  />
     	<param name="encoder_res"       value="1024.0"  />
       <param name="adc_conv"					value="0.0" />			
@@ -115,6 +119,7 @@
     	<param name="ki" 		            value="$(arg ki)"  />
     	<param name="kd" 		            value="0.0"    />
     	<param name="pwm_limit"         value="100.0"  />
+     	<param name="rpm_limit"         value="200.0"  />
     	<param name="gear_ratio"        value="22.4"  />
     	<param name="encoder_res"       value="1024.0"  />
       <param name="adc_conv"					value="0.0" />			

@@ -38,7 +38,8 @@ bool BaseControllerROS::init()
 
    // parameters for the motor manager
    std::string can_interface_name;
-   privateNh.param("can_interface_name", can_interface_name, std::string("can-motor"));
+   privateNh.param("can_interface_name", can_interface_name,
+                   std::string("can-motor"));
    if(!_motor_handler.initCanInterface(can_interface_name))
    {
       evo::log::get() << _logger_prefix
@@ -112,11 +113,11 @@ bool BaseControllerROS::init()
 
    privateNh.param("enable_lift_control", _enable_lift_control, false);
 
-
    // toggle joint state publishing
    privateNh.param("enable_joint_state_publisher", _enable_joint_state_publisher, false);
    if(_enable_joint_state_publisher)
    {
+      int n_joints = 0;
       std::string topic_joint_states;
       privateNh.param("topic_pub_joint_states", topic_joint_states, std::string("base_joint_states"));
       _pub_joint_state = _nh.advertise<sensor_msgs::JointState>(topic_joint_states, 1);
@@ -124,21 +125,22 @@ bool BaseControllerROS::init()
       _joint_state_msg.name.push_back("joint_wheel_front_right");
       _joint_state_msg.name.push_back("joint_wheel_back_right");
       _joint_state_msg.name.push_back("joint_wheel_back_left");
-      
+      n_joints += 4;
+
       if(_enable_lift_control)
       {
          // TODO
       }
       else
       {
-         _joint_state_msg.position.resize(4);
-         _joint_state_msg.velocity.resize(4);
+         _joint_state_msg.position.resize(n_joints);
+         _joint_state_msg.velocity.resize(n_joints);
+         // MMA FEATURE: get effort from motorcontrollers?
+
          // not implemented atm
-         //_joint_state_msg.effort.resize(4);
+         //_joint_state_msg.effort.resize(n_joints);
       }
    }
-
-
 
    // setup connections
    _sub_cmd_vel = _nh.subscribe<geometry_msgs::Twist>(topic_sub_cmd_vel, 1, &BaseControllerROS::cbCmdVel, this);
@@ -168,18 +170,50 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
 {
    std::vector<MotorShieldConfig> mc_config_ros;
    std::string paramName, paramPrefix;
-   int controller_id         = 1;
+   int motorshield_id        = 1;
    static const int n_motors = 2;
 
    std::map<std::string, double> param_map;
 
+   int init_n_shields = 0;
+   privateNh.param("init_n_motorshields", init_n_shields, 2);
+   evo::log::get() << _logger_prefix << "Loading config for " 
+                   << init_n_shields << " motorshields" <<
+   evo::info;
+
    // check if the next motorshield exists
-   paramPrefix = "ms" + std::to_string(controller_id);
+   paramPrefix = "ms" + std::to_string(motorshield_id);
    while(privateNh.hasParam(paramPrefix + "/enable"))
    {
+      // error prevention
+      if(motorshield_id > init_n_shields)
+      {
+         evo::log::get() << _logger_prefix
+                         << "param server contains enable for next ms-id"
+                         << ", but n-ms > init-n-ms! (" << motorshield_id << " > "
+                         << init_n_shields << ")" << evo::warn;
+         evo::log::get() << _logger_prefix
+                         << "do you want to include the next shield? (y/n)" << evo::warn;
+         char input;
+         std::cin >> input; 
+         try
+         {
+            if(std::tolower(input) != 'y')
+            {
+               evo::log::get() << _logger_prefix << "--> NO" << evo::info;
+               break;
+            }
+            evo::log::get() << _logger_prefix << "--> YES" << evo::info;
+         } 
+         catch(const std::exception& e)
+         {
+            evo::log::get() << e.what() << evo::error;
+         }
+      }
+
       bool enable_mc = false;
       privateNh.getParam(paramPrefix + "/enable", enable_mc);
-      evo::log::get() << _logger_prefix << "Enable ms" << controller_id << ": "
+      evo::log::get() << _logger_prefix << "Enable ms" << motorshield_id << ": "
                       << enable_mc << evo::info;
 
       if(enable_mc)
@@ -187,26 +221,26 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
          evo::log::get() << _logger_prefix << "--------------------------"
                          << evo::info;
          evo::log::get() << _logger_prefix << "Loading parameters for ms"
-                         << controller_id << evo::info;
+                         << motorshield_id << evo::info;
 
          // load mc param
-         MotorShieldConfig mc_config;
-         mc_config.id   = controller_id;
+         MotorShieldConfig ms_config;
+         ms_config.id   = motorshield_id;
          int timeout_ms = 10;
          if(!privateNh.getParam(paramPrefix + "/timeout_ms", timeout_ms))
          {
             timeout_ms = 10;
             evo::log::get() << _logger_prefix
                             << "no timeout_ms parameter given! using default: "
-                            << mc_config.timeout_ms << evo::warn;
+                            << ms_config.timeout_ms << evo::warn;
          }
-         mc_config.timeout_ms = static_cast<uint32_t>(timeout_ms);
+         ms_config.timeout_ms = static_cast<uint32_t>(timeout_ms);
          // could also be loaded as param
-         mc_config.n_motors = n_motors;
-         mc_config.motor_configs.clear();
+         ms_config.n_motors = n_motors;
 
          // load params for two motors
-         for(int motor_id = 0; motor_id < mc_config.n_motors; motor_id++)
+         ms_config.motor_configs.clear();
+         for(int motor_id = 0; motor_id < ms_config.n_motors; motor_id++)
          {
             evo::log::get() << _logger_prefix << "Loading parameters for motor"
                             << motor_id << evo::info;
@@ -217,6 +251,7 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
             param_map["ki"]            = 0.0;
             param_map["kd"]            = 0.0;
             param_map["pwm_limit"]     = 0.0;
+            param_map["rpm_limit"]     = 0.0;
             param_map["gear_ratio"]    = 0.0;
             param_map["encoder_res"]   = 0.0;
             param_map["adc_conv"]      = 0.0;
@@ -255,22 +290,24 @@ BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
             motor_config.encoder_res          = param_map.at("encoder_res");
             motor_config.gear_ratio           = param_map.at("gear_ratio");
             motor_config.pwm_limit            = param_map.at("pwm_limit");
+            motor_config.rpm_limit            = param_map.at("rpm_limit");
             motor_config.adc_conv_mm_per_tick = param_map.at("adc_conv");
             motor_config.adc_offs_mm          = param_map.at("adc_offs");
 
             motor_config.motor_mapping =
                 static_cast<uint8_t>(param_map.at("motor_mapping"));
-            mc_config.motor_configs.push_back(motor_config);
+            ms_config.motor_configs.push_back(motor_config);
          }
-         mc_config_ros.push_back(mc_config);
+         mc_config_ros.push_back(ms_config);
       }
-      ++controller_id;
-      paramPrefix = "ms" + std::to_string(controller_id);
+      ++motorshield_id;
+      paramPrefix = "ms" + std::to_string(motorshield_id);
    }
    return mc_config_ros;
 }
 
-void BaseControllerROS::publishOdomMsg(const MecanumVel& odom_vel, const MecanumPose& odom_pose)
+void BaseControllerROS::publishOdomMsg(const MecanumVel& odom_vel,
+                                       const MecanumPose& odom_pose)
 {
    // create odom nav msg
    nav_msgs::Odometry odom;
@@ -281,8 +318,12 @@ void BaseControllerROS::publishOdomMsg(const MecanumVel& odom_vel, const Mecanum
    odom.child_frame_id  = _odom_child_frame_id;
 
    // pose
-   odom.pose.pose.position.x     = odom_pose._x_m;
-   odom.pose.pose.position.y     = odom_pose._y_m;
+   odom.pose.pose.position.x = odom_pose._x_m;
+   odom.pose.pose.position.y = odom_pose._y_m;
+
+   // MMA ERROR: should we really use this function?
+   // MMA FEATURE: if we extend the functionality to lift and tilting, we have to
+   // change this anyways
    tf::Quaternion pose_quaterion = tf::createQuaternionFromYaw(odom_pose._yaw_rad);
    odom.pose.pose.orientation.w  = pose_quaterion.getW();
    odom.pose.pose.orientation.y  = pose_quaterion.getY();
@@ -321,7 +362,7 @@ void BaseControllerROS::publishOdomTF(const MecanumPose& odom_pose)
    tf_odom.stamp_          = ros::Time::now();
    tf_odom.frame_id_       = _odom_frame_id;
    tf_odom.child_frame_id_ = _odom_child_frame_id;
-   
+
    // position
    tf_odom.setOrigin(tf::Vector3(_odom_pose._x_m, _odom_pose._y_m, 0));
 
@@ -332,7 +373,8 @@ void BaseControllerROS::publishOdomTF(const MecanumPose& odom_pose)
    _tf_pub_odom.sendTransform(tf_odom);
 }
 
-void BaseControllerROS::publishJointStates(const MecanumWheelData& wheel_positions, const MecanumWheelData& wheel_rotations)
+void BaseControllerROS::publishJointStates(const MecanumWheelData& wheel_positions,
+                                           const MecanumWheelData& wheel_rotations)
 {
    _joint_state_msg.position[0] = wheel_positions.front_left;
    _joint_state_msg.position[1] = wheel_positions.front_right;
@@ -354,7 +396,6 @@ void BaseControllerROS::publishJointStates(const MecanumWheelData& wheel_positio
    _pub_joint_state.publish(_joint_state_msg);
 }
 
-
 void BaseControllerROS::publishBaseStatus()
 {
    // get drive data
@@ -362,80 +403,24 @@ void BaseControllerROS::publishBaseStatus()
    MecanumPose odom_pose_increment;
    MecanumWheelData wheel_positions;
    MecanumWheelData wheel_velocities;
-   _mecanum_drive.getOdomComplete(odom_vel, odom_pose_increment, wheel_positions, wheel_velocities);
-  
+   _mecanum_drive.getOdomComplete(odom_vel, odom_pose_increment, 
+                                 wheel_positions, wheel_velocities);
+
    // update pose
    _odom_pose.updatePoseFromIncrement(odom_pose_increment);
    publishOdomMsg(odom_vel, _odom_pose);
 
    // eventually publish odom TF
    if(_enable_odom_tf)
-      {publishOdomTF(_odom_pose);}
-   
+   {publishOdomTF(_odom_pose);}
+
    // eventually publish joint states
    if(_enable_joint_state_publisher)
-      {publishJointStates(wheel_positions, wheel_velocities);}
-   
-   // TODO: lift?
-}
-
-
-void BaseControllerROS::publishOdom()
-{
-   MecanumVel odom_raw = _mecanum_drive.getOdom();
-
-   nav_msgs::Odometry odom;
-   odom.header.stamp          = ros::Time::now();
-   odom.header.frame_id = _odom_frame_id;
-   odom.child_frame_id = _odom_child_frame_id;
-
-
-   odom.twist.twist.linear.x  = odom_raw._x_ms;
-   odom.twist.twist.linear.y  = odom_raw._y_ms;
-   odom.twist.twist.angular.z = odom_raw._yaw_rads;
-
-   // add up to position - from vel
-   //_odom_pose.updatePoseFromVel(odom_raw, _loop_rate_hz.cycleTime().toSec());
-
-   // add up position - from increment
-   _odom_pose.updatePoseFromIncrement(_mecanum_drive.getPoseIncrement());
-
-   odom.pose.pose.position.x     = _odom_pose._x_m;
-   odom.pose.pose.position.y     = _odom_pose._y_m;
-   tf::Quaternion pose_quaterion = tf::createQuaternionFromYaw(_odom_pose._yaw_rad);
-   odom.pose.pose.orientation.w  = pose_quaterion.getW();
-   odom.pose.pose.orientation.y  = pose_quaterion.getY();
-   odom.pose.pose.orientation.z  = pose_quaterion.getZ();
-   odom.pose.pose.orientation.x  = pose_quaterion.getX();
-
-   // covariances
-   const double cpx   = _mecanum_covariance.cov_pos_x;
-   const double cpy   = _mecanum_covariance.cov_pos_y;
-   const double cpyaw = _mecanum_covariance.cov_pos_yaw;
-   const double cvx   = _mecanum_covariance.cov_vel_x;
-   const double cvy   = _mecanum_covariance.cov_vel_y;
-   const double cvyaw = _mecanum_covariance.cov_vel_yaw;
-
-   odom.twist.covariance = {cpx, 0.0, 0.0, 0.0, 0.0, 0.0,   0.0, cpy, 0.0,
-                            0.0, 0.0, 0.0, 0.0, 0.0, cpyaw, 0.0, 0.0, 0.0,
-                            0.0, 0.0, 0.0, cvx, 0.0, 0.0,   0.0, 0.0, 0.0,
-                            0.0, cvy, 0.0, 0.0, 0.0, 0.0,   0.0, 0.0, cvyaw};
-
-   odom.pose.covariance = odom.twist.covariance;
-
-   _pub_odom.publish(odom);
-
-   // Transform
-   if(_enable_odom_tf)
    {
-      tf::StampedTransform tf_odom;
-      tf_odom.setOrigin(tf::Vector3(_odom_pose._x_m, _odom_pose._y_m, 0));
-      tf_odom.setRotation(pose_quaterion);
-      tf_odom.frame_id_       = _odom_frame_id;
-      tf_odom.child_frame_id_ = _odom_child_frame_id;
-      tf_odom.stamp_          = odom.header.stamp;
-      _tf_pub_odom.sendTransform(tf_odom);
+      publishJointStates(wheel_positions, wheel_velocities);
    }
+
+   // TODO: lift?
 }
 
 void BaseControllerROS::cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel)
@@ -610,14 +595,15 @@ void BaseControllerROS::main_loop()
       while(ros::ok())
       {
          ros::spinOnce();
-         //publishOdom();
          publishBaseStatus();
-         if(_enable_lift_control) publishLiftPos();
+         if(_enable_lift_control)
+         {publishLiftPos();}
 
          if(checkStatus())
          {
             checkAndApplyCmdVel();
-            if(_enable_lift_control) checkAndApplyCmdLift();
+            if(_enable_lift_control)
+            {checkAndApplyCmdLift();}
          }
 
          _loop_rate_hz.sleep();
