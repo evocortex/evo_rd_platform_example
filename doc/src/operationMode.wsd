@@ -1,0 +1,74 @@
+@startuml
+
+' status check
+
+group collect and publish base status
+
+   group MecanumDrive
+
+      BaseControllerROS -> MecanumDrive ++: get Odom complete
+      MecanumDrive -> MecanumDrive: check init status
+
+      alt not fully initialized
+         MecanumDrive ->x BaseControllerROS: error
+      else all values and motor references set correctly
+
+         group CAN com to motor shields
+            MecanumDrive -> Motor ++: get Speed RPM
+            return speed RPM
+            MecanumDrive -> Motor ++: get Revolutions
+            return revolutions
+         end
+
+         group evaluate wheel data
+            MecanumDrive -> MecanumDrive: wheel speed to velocity
+            MecanumDrive -> MecanumDrive: wheel position diff to pose increment
+         end
+
+         return odom velocity & pose increment
+      end
+
+      BaseControllerROS -> BaseControllerROS: update pose from increment
+      [<- BaseControllerROS: publish Odom Msg
+      [<- BaseControllerROS: publish Odom TF
+      [<- BaseControllerROS: publish Joint States
+
+   end
+end
+
+
+group cmd vel callback
+   [-> BaseControllerROS: cmd vel
+   BaseControllerROS -> BaseControllerROS: save cmd vel
+end
+
+group check and apply cmd vel
+   BaseControllerROS -> BaseControllerROS: check timestamp
+   alt command timeout
+      BaseControllerROS -> MecanumDrive: set zero velocity
+   else valid command 
+      BaseControllerROS -> MecanumDrive ++: set cmd vel
+      MecanumDrive -> MecanumDrive: check init status
+      alt not fully initialized
+         MecanumDrive ->x BaseControllerROS: error
+      else
+         MecanumDrive -> MecanumDrive: cmd vel to wheel RPM
+         group vector limiting of maximum speeds 
+         MecanumDrive -> Motor ++: get max RPM 
+         return max RPM
+         MecanumDrive -> MecanumDrive: compare cmd, max and other wheels
+         MecanumDrive -> MecanumDrive: apply highest reduction factor
+         end
+         MecanumDrive -> Motor ++: set target RPM
+         return response 
+
+         alt errors
+            MecanumDrive ->x BaseControllerROS: error
+         else no errors 
+            return ok
+         end 
+      end
+   end
+
+end
+@enduml
