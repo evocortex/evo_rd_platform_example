@@ -39,8 +39,7 @@ namespace evo {
  */
 BaseControllerROS::BaseControllerROS() :
     _logger_prefix("BaseControllerROS: "), 
-    _lift_moving(false),
-    _lift_moving_strd(false), 
+    _lift_active(false), 
     _error_present(false), 
     _is_initialized(false),
     _loop_rate_hz(50)
@@ -520,22 +519,18 @@ void BaseControllerROS::cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift)
 
 void BaseControllerROS::checkAndApplyCmdVel()
 {
-   // Check if lift drive is moving -> ignore commands
-   if(_lift_moving)
-   {
-      _cmd_vel = MecanumVel();
-      return;
-   }
-
    // check timestamp
    if(ros::Time::now().toSec() > (_stamp_cmd_vel.toSec() + _timeout_cmd_vel))
    {
       evo::log::get() << _logger_prefix
                       << "cmd vel timeout detected! stopping robot.." << evo::warn;
-      MecanumVel zero;
-      _mecanum_drive.setCmdVel(zero);
+      
+      const MecanumVel zero_vel;
+      _cmd_vel = zero_vel;
    }
-   else
+
+   // only set cmd_vel if lift is not active
+   if(!_lift_active || !_enable_lift_control)
    {
       _mecanum_drive.setCmdVel(_cmd_vel);
    }
@@ -543,21 +538,6 @@ void BaseControllerROS::checkAndApplyCmdVel()
 
 void BaseControllerROS::checkAndApplyCmdLift()
 {
-   // check timestamp
-   if(ros::Time::now().toSec() > (_stamp_cmd_lift.toSec() + _timeout_cmd_lift))
-   {
-      evo::log::get() << _logger_prefix
-                      << "cmd lift timeout detected! stopping lift mechanism.."
-                      << evo::warn;
-      _lift_controller.setMovingDirection(0);
-      _lift_moving = false;
-   }
-   else
-   {
-      _lift_moving = _cmd_lift != 0;
-      _lift_controller.setMovingDirection(_cmd_lift);
-   }
-
 
    /*  REV
     *             +++ 1. What does "_strd" mean? Why not "_old" or something similar? -> @TODO @MBA stored
@@ -565,101 +545,142 @@ void BaseControllerROS::checkAndApplyCmdLift()
     *             +++ 3. Why is there no error message after the second attempt, 
     *                considering that there will be no next attempt without another edge? (checkStatus() will reenable them?)
     *             -> @TODO @MBA
+    *             MBA: Changed complete code structure
     */
-
-   if(_lift_moving && !_lift_moving_strd)
+   // check timestamp
+   if(ros::Time::now().toSec() > (_stamp_cmd_lift.toSec() + _timeout_cmd_lift))
    {
-      MecanumVel zero;
-      _mecanum_drive.setCmdVel(zero);
-
-      _motor_handler.disableAllDriveMotors();
+      evo::log::get() << _logger_prefix
+                      << "cmd lift timeout detected! stopping lift mechanism.."
+                      << evo::warn;
+      
+      // Stop lift movement
+      _cmd_lift = 0;
    }
-   else if(!_lift_moving && _lift_moving_strd)
-   {
-      MecanumVel zero;
 
-      if(!_motor_handler.enableAllDriveMotors())
+   const bool lift_movement_req  = (_cmd_lift != 0);
+   const bool drive_movement_req =  (_cmd_vel._x_ms != 0.0 || 
+                                     _cmd_vel._y_ms != 0.0 || 
+                                     _cmd_vel._yaw_rads != 0.0);
+
+   // State transition: Lift inactive to lift active
+   if(!_lift_active && lift_movement_req)
+   {
+      evo::log::get() << _logger_prefix 
+                      << "disable drives | enable lift" 
+                      << evo::info;
+
+      // Try to disable all drive motors to avoid blockage of lift mechanism
+      // Stopp movement
+      const MecanumVel zero_vel;
+      _mecanum_drive.setCmdVel(zero_vel);
+
+      // Disable all drives motors to avoid blockage of the lift mechanism
+      if(_motor_handler.disableAllDriveMotors())
       {
-         evo::log::get() << _logger_prefix << "Failed to enable all drives retrying!"
-                         << evo::warn;
-
-         _motor_handler.enableAllDriveMotors();
+         // Lift is now active
+         _lift_active = true;
       }
-
-      _mecanum_drive.setCmdVel(zero);
+      else
+      {
+         // Disabling of drive motors failed
+         // Lift is not active
+         _lift_active = false;
+      }
    }
+   // State transition: Lift active to lift inactive
+   // To avoid disabling the lift to fast check for a drive movement
+   // request
+   else if(_lift_active && !lift_movement_req && drive_movement_req)
+   {
+      evo::log::get() << _logger_prefix 
+                      << "enable drives | disable lift" 
+                      << evo::info;
 
-   _lift_moving_strd = _lift_moving;
+      // Stop lift movement
+      _lift_controller.setMovingDirection(0);
+
+      // Reenable drive motors
+      if(_motor_handler.enableAllDriveMotors())
+      {
+         // Lift movement is disabled
+         _lift_active = false;
+      }
+      else
+      {
+         // Failed to enable drive motors
+         // Lift mechanism is still active
+         _lift_active = true;
+      }
+   }
+   // Lift mechanism is active
+   else if(_lift_active)
+   {
+      _lift_controller.setMovingDirection(_cmd_lift);
+   }
+   // Unknown state -> disable lift movement
+   else
+   {
+      _lift_controller.setMovingDirection(0);
+   }
 }
-
-/*  REV
- *  WHA STYLE: As we use git, there should be no need for function corpses remaining in the source code.
- */
-
-/*
- * -> Removed by bausma
- * -> Function handled by checkStatus() function
-void BaseControllerROS::cbSyncTimeout(const ros::TimerEvent &te)
-{
-    std_msgs::Bool enable_signal_off;
-    enable_signal_off.data = false;
-    if(!_motor_handler.checkSyncStatus())
-    {
-        evo::log::get() << _logger_prefix << "motorshield out of sync! --> resync" <<
-evo::warn; if(!_motor_handler.resyncMotorShields())
-        {
-            evo::log::get() << _logger_prefix << "resync failed! -> Missing enable
-signal?" << evo::error; enable_signal_off.data = true;
-        }
-        else
-        {
-            _motor_handler.enableAllMotors();
-        }
-    }
-    _pub_enable_signal_off.publish(enable_signal_off);
-}
-*/
 
 const bool BaseControllerROS::checkStatus()
 {
-   std_msgs::Bool enable_signal_off;
-   enable_signal_off.data = false;
-
-   if(!_motor_handler.checkStatus())
-   {
-      evo::log::get()
-          << _logger_prefix
-          << " motorshield communication error! -> Missing enable signal?"
-          << evo::warn;
-      _error_present         = true;
-      enable_signal_off.data = true;
-
-      _motor_handler.disableAllMotors();
-   }
-
    /*  REV
     *  WHA STYLE: +++ It is not quite clear whether disabling all motors sets the handler to a valid status, 
     *             therefore leading to the else branch. -> TODO MBA clean up code
     *      INFO:  +++ As we only detect an error and create the edge ourselves by toggling the bool,
     *             I personally wouldn't quite call this edge detection. -> See below
     *  MPP INFO:  +++ Expression "falling edge detection" makes no sense. -> TODO MBA: better name instead of "falling edge detection"
+    *  MBA: Changed complete code structure
     */
-   // falling edge detection for error status to re-enable motors
-   else if(_error_present)
+   const bool motor_status = _motor_handler.checkStatus();
+
+   // State transition: Error to no error
+   if(motor_status && _error_present)
    {
-      _error_present = false;
-
-      /*  REV
-       *  WHA STYLE: +++ If there is a comment admitting that this is a hack, I would like to know more 
-       *             about why this is a hack and why this hack is necessary. -> TODO MBA
-       */
-
-      // Small hack
-      std::this_thread::sleep_for(std::chrono::milliseconds(500u));
-
-      _motor_handler.enableAllMotors();
+      // Try to enable all motors
+      if(_motor_handler.enableAllMotors())
+      {
+         // Error healed
+         _error_present = false;
+      }
+      else
+      {
+         // Not able to re-enable drives
+         // error still present
+         _error_present = true;
+      }
+   }
+   // State transition: No error to error
+   else if(!motor_status && !_error_present)
+   {
+      // Try to disable all motors
+      if(_motor_handler.disableAllMotors())
+      {
+         // Error active
+         _error_present = true;
+      }
+      else
+      {
+         // Unable to disable all drives
+         // Error is present but not active
+         _error_present = false;
+      }
    }
 
+   if(_error_present)
+   {
+      evo::log::get()
+          << _logger_prefix
+          << " motorshield communication error! -> Missing enable signal?"
+          << evo::warn;
+   }
+
+   
+   std_msgs::Bool enable_signal_off;
+   enable_signal_off.data = _error_present;
    _pub_enable_signal_off.publish(enable_signal_off);
 
    return !_error_present;

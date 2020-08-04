@@ -62,8 +62,7 @@ class BaseControllerROS
 
    // Lift Controller
    LiftController _lift_controller;
-   bool           _lift_moving;
-   bool           _lift_moving_strd;
+   bool           _lift_active;
 
    double _timeout_cmd_lift;
    ros::Time _stamp_cmd_lift;
