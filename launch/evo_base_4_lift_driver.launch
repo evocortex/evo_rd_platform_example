@@ -141,6 +141,7 @@
     	<param name="ki" 		            value="$(arg ki)"  />
     	<param name="kd" 		            value="0.0"    />
     	<param name="pwm_limit"         value="75.0"  />
+		 <param name="rpm_limit"         value="0.0"  />
     	<param name="gear_ratio"        value="0.0"  />
     	<param name="encoder_res"       value="0.0"  />
       <param name="adc_conv"					value="-0.0483" />			
@@ -156,6 +157,7 @@
     	<param name="ki" 		            value="$(arg ki)"  />
     	<param name="kd" 		            value="0.0"    />
     	<param name="pwm_limit"         value="75.0"  />
+		 <param name="rpm_limit"         value="0.0"  />
     	<param name="gear_ratio"        value="0.0"  />
     	<param name="encoder_res"       value="0.0"  />
       <param name="adc_conv"					value="-0.0483" />			
@@ -177,6 +179,7 @@
     	<param name="ki" 		            value="$(arg ki)"  />
     	<param name="kd" 		            value="0.0"    />
     	<param name="pwm_limit"         value="75.0"  />
+		 <param name="rpm_limit"         value="0.0"  />
     	<param name="gear_ratio"        value="0.0"  />
     	<param name="encoder_res"       value="0.0"  />
       <param name="adc_conv"					value="-0.0483" />			
@@ -192,6 +195,7 @@
     	<param name="ki" 		            value="$(arg ki)"  />
     	<param name="kd" 		            value="0.0"    />
     	<param name="pwm_limit"         value="75.0"  />
+		 <param name="rpm_limit"         value="0.0"  />
     	<param name="gear_ratio"        value="0.0"  />
     	<param name="encoder_res"       value="0.0"  />
       <param name="adc_conv"					value="-0.0483" />			
