@@ -607,6 +607,14 @@ const bool BaseControllerROS::checkStatus()
           << _logger_prefix
           << " motorshield communication error! -> Missing enable signal?"
           << evo::warn;
+
+      // Stop all movement
+      _lift_active = false;
+      _lift_controller.setMovingDirection(0);
+
+      // Reset command velocity
+      const MecanumVel zero_vel;
+      _mecanum_drive.setCmdVel(zero_vel);
    }
 
    
