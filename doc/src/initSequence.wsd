@@ -1,0 +1,67 @@
+@startuml
+
+' first stage of the init process
+
+group CAN com check
+
+BaseControllerROS -> MotorManager ++: init CAN Interface
+
+alt CAN success
+
+   return init successful
+
+else CAN module unavailable
+
+   MotorManager ->x BaseControllerROS: critical error
+
+end
+end
+
+' second stage: actually init motors
+
+group Load and Initialize Motor Config
+
+BaseControllerROS -> BaseControllerROS: load ROS config
+BaseControllerROS -> MotorManager: set ROS config
+
+alt no errors
+   BaseControllerROS -> MotorManager ++: init from ROS config
+   MotorManager -> MotorShield **: create new shield with ID
+   MotorShield -> Motor **: create Motor instances
+   MotorManager -> MotorShield: init new shield
+   MotorManager -> MotorShield ++: request Motor reference
+   return Motor reference
+   MotorManager -> Motor: set params (OP state, attr)
+   return success
+else errors
+   MotorManager ->x BaseControllerROS: failure
+end
+
+end
+
+' third stage: init motor mapping
+
+group Initialize Motor mapping
+   BaseControllerROS -> MotorManager ++: init Motor mapping
+   MotorManager -> MotorManager: check config for Motor positions
+   MotorManager -> MotorShield: request Motor reference
+   MotorShield --> MotorManager: Motor reference
+
+   alt Drive Motor
+      MotorManager -> MecanumDrive: set Motor reference
+   else Lift Motor 
+      MotorManager -> LiftController: set Motor reference
+   end
+   return
+end
+
+group Final system check
+   BaseControllerROS -> MotorManager: enable all Motors
+   alt no errors
+   MotorManager -> BaseControllerROS: success
+else errors
+   MotorManager ->x BaseControllerROS: failure
+end
+end
+
+@enduml
