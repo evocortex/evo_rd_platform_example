@@ -17,9 +17,9 @@
   <!-- Motion Configuration -->
   <motion>
     <model>OMNI</model>  <!-- OMNI: Omnidirectional Drive, DIFF: Differential Drive -->
-    <a1>0.0</a1> <!-- diff: rot error from rot motion; omni: x error from x motion -->
-    <a2>0.0</a2> <!-- diff: rot error from trans motion; omni: y error from y motion -->
-    <a3>0.0</a3> <!-- diff: trans error from trans motion; omni: yaw error from yaw motion -->
+    <a1>1.0</a1> <!-- diff: rot error from rot motion; omni: x error from x motion -->
+    <a2>1.0</a2> <!-- diff: rot error from trans motion; omni: y error from y motion -->
+    <a3>1.0</a3> <!-- diff: trans error from trans motion; omni: yaw error from yaw motion -->
     <a4>0.0</a4> <!-- diff: trans error from rot motion; omni: not used -->
   </motion>
 
@@ -35,7 +35,7 @@
   <!-- Controller Model -->
   <controller>
     <model>STD</model> <!-- STD: laser + movement, LASER_ONLY: laser -->
-    <resample_count>5</resample_count> <!-- measurements to integrate before resampling takes place -->
+    <resample_count>50</resample_count> <!-- measurements to integrate before resampling takes place -->
     <min_tans_movement>0.0001</min_tans_movement> <!-- minimal translational movement to prevent accumulation of sensor noise -->
     <min_rot_movement>0.0001</min_rot_movement> <!-- minimal rotational movement to prevent accumulation of sensor noise -->
     <detect_movement_reactiveness>0.2</detect_movement_reactiveness> <!-- inertia of movement detection system -->  

@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="0.0"?>
 <launch>
 
     <include file="$(find evo_tsd_slam)/launch/slam.launch">
@@ -17,7 +17,7 @@
         <arg name="max_range" value="30.0" />
 
         <arg name="tf_base_frame" value="map" />
-        <arg name="tf_child_frame" value="laser" />
+        <arg name="tf_child_frame" value="laser_front" />
         <arg name="tf_footprint_frame" value="base_footprint_slam" />
     </include>
     
