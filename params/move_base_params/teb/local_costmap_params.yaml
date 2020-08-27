@@ -1,0 +1,19 @@
+local_costmap:
+   global_frame: map
+   robot_base_frame: base_footprint
+   transform_tolerance: 0.5
+   update_frequency: 10.0
+   publish_frequency: 1.0
+   rolling_window: true
+   static_map: false
+   width: 4.0
+   height: 4.0
+   resolution: 0.025 # default: 0.05
+   plugins:
+    - {name: static_layer,        type: "costmap_2d::StaticLayer"}
+    - {name: obstacle_layer,      type: "costmap_2d::VoxelLayer"}
+    - {name: inflation_layer,     type: "costmap_2d::InflationLayer"}
+
+
+# watch out! inflation layer has to be last, bc otherwise the layers will NOT be included (not known when creating inflation layer)
+

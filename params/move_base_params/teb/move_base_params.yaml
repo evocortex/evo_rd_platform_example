@@ -1,0 +1,55 @@
+# Move base node parameters. For full documentation of the parameters in this file, please see
+#
+#  http://www.ros.org/wiki/move_base
+#
+
+base_global_planner: "mcr_global_planner/GlobalPlannerWithOrientations" 
+base_local_planner: "teb_local_planner/TebLocalPlannerROS" # local planner - default is trajectory rollout
+# base_local_planner: "dwa_local_planner/DWAPlannerROS"
+
+
+recovery_behaviors:
+  - name: 'level1_recovery' # clear costmaps (moderately)
+    type: 'clear_costmap_recovery/ClearCostmapRecovery'
+  - name: 'level2_recovery' # clear costmaps more aggressive
+    type: 'clear_costmap_recovery/ClearCostmapRecovery'
+
+
+# first recovery, try deleting 1m barrier and laser
+level1_recovery:
+    reset_distance: 1.0
+    layer_names: ['obstacle_layer']
+
+level2_recovery:
+    reset_distance: 4.0
+    layer_names: ['obstacle_layer']
+
+
+#We plan to integrate recovery behaviors for turtlebot but currently those belong to gopher and still have to be adapted.
+## recovery behaviors; we avoid spinning, but we need a fall-back replanning
+recovery_behavior_enabled: true # default true
+clearing_rotation_allowed: false # was false - default true
+
+controller_frequency: 10.0 # was 6.0 for youbot # default 20.0 cant be higher than lowest sensor frequency!
+controller_patience: 3.0 # default 15.0
+
+planner_frequency: 1.0 # default 0.0, last 1.0, global planning loop
+planner_patience: 5.0 # default 5.0
+
+shutdown_costmaps: false # default false
+
+oscillation_timeout: 5.0 # default 0.0
+oscillation_distance: 0.2 # default 0.5
+
+#super_conservative_reset1:
+  #reset_distance: 3.0
+#conservative_reset1:
+  #reset_distance: 1.5
+#aggressive_reset1:
+  #reset_distance: 0.0
+#super_conservative_reset2:
+  #reset_distance: 3.0
+#conservative_reset2:
+  #reset_distance: 1.5
+#aggressive_reset2:
+  #reset_distance: 0.0
