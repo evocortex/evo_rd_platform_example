@@ -4,7 +4,7 @@
    <arg name="kp" 	default="0.005" />
    <arg name="ki" 	default="4.0" />
 
-  <node name="$(arg NodeName)" pkg="evo_rd_platform_example" type="base_controller_node" output="screen" >
+  <node name="$(arg NodeName)" pkg="evo_rd_platform_example" type="base_controller_node" output="screen" respawn="true">
     <param name="loop_rate_hz"       value="30.0"     />
 
 <!-- Subscribers -->
