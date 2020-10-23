@@ -29,7 +29,7 @@
       <remap from="scan" to="scan_front_raw" />
   </node>
 
-  <node name="scan_inverter_front" pkg="evo_scan_inverter" type="scan_inverter_node" respawn="false" output="screen">
+  <node name="scan_inverter_front" pkg="evo_scan_inverter" type="evo_scan_inverter_node" respawn="false" output="screen">
       <remap from="scan_raw" to="scan_front_raw" />
       <remap from="scan" to="scan_front" />
   </node>
