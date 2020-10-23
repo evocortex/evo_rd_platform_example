@@ -629,8 +629,12 @@ void BaseControllerROS::main_loop()
 {
    if(!_is_initialized)
    {
-      evo::log::get() << _logger_prefix << "not initialized! check your code!"
-                      << evo::error;
+      evo::log::get() << _logger_prefix << "Node is not initialized!" << evo::error;
+      evo::log::get() << _logger_prefix << "Possible Solutions:" << evo::error;
+      evo::log::get() << _logger_prefix << "[1] Restart node and check if init is successful" << evo::error;
+      evo::log::get() << _logger_prefix << "[2] Check if the Motorshields are powered" << evo::error;
+      evo::log::get() << _logger_prefix << "[3] Check if the CAN Interface is initialized" << evo::error;
+      evo::log::get() << _logger_prefix << "[4] Check if some motor connections are broken" << evo::error;
       return;
    }
    else
