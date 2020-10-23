@@ -21,6 +21,8 @@
 
 #include "evo_logger/log/Logger.h"
 
+#include "evo_mbed/Version.h"
+
 #include "evo_robot_base_interface/LiftController.h"
 #include "evo_robot_base_interface/MecanumDrive.h"
 #include "evo_robot_base_interface/MotorManager.h"
