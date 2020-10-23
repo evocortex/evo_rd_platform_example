@@ -38,6 +38,17 @@ bool BaseControllerROS::init()
    // load all relevant parameters
    ros::NodeHandle privateNh("~");
 
+   // initial firmware checkup
+   int fw_major_ver, fw_minor_ver, fw_patch_ver;
+   privateNh.param("firmware_major_version", fw_major_ver, 1);
+   privateNh.param("firmware_minor_version", fw_minor_ver, 0);
+   privateNh.param("firmware_patch_version", fw_patch_ver, 0);
+   if(!checkFirmwareVersion(fw_major_ver, fw_minor_ver, fw_patch_ver))
+   {      
+      evo::log::get() << _logger_prefix << "Can't init with mismatching firmware versions!" << evo::error;
+      return false;
+   }
+
    // parameters for the motor manager
    std::string can_interface_name;
    privateNh.param("can_interface_name", can_interface_name, std::string("can-motor"));
@@ -444,6 +455,41 @@ void BaseControllerROS::cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift)
 {
    _stamp_cmd_lift = ros::Time::now();
    _cmd_lift       = cmd_lift->data;
+}
+
+bool BaseControllerROS::checkFirmwareVersion(const int major_ver, const int minor_ver, const int patch_ver)
+{
+   bool success = true;
+   if(EVO_MBED_TOOLS_VER_MAJOR != major_ver)
+   {
+      evo::log::get() << _logger_prefix << "Major Version mismatch! Expected [" 
+                      << major_ver << "] but evo_mbed is [" << EVO_MBED_TOOLS_VER_MAJOR << "]!" <<  evo::error;
+      success &= false;
+   }
+
+   if(EVO_MBED_TOOLS_VER_MINOR != minor_ver)
+   {
+      evo::log::get() << _logger_prefix << "Minor Version mismatch! Expected [" 
+                      << minor_ver << "] but evo_mbed is [" << EVO_MBED_TOOLS_VER_MINOR << "]!" <<  evo::error;
+      success &= false;
+   }
+
+   // patch is not critical, so dont end here
+   if(EVO_MBED_TOOLS_VER_PATCH < patch_ver)
+   {
+      evo::log::get() << _logger_prefix << "Detected Patch Version mismatch! Expected at least [" 
+                      << patch_ver << "] but evo_mbed is [" << EVO_MBED_TOOLS_VER_MINOR << "]!" <<  evo::warn;
+   }
+
+   if(!success)
+   {
+      evo::log::get() << _logger_prefix << "Your ROS Node Version expects the evo_mbed firmware to be at version ["
+                     << major_ver << "." << minor_ver << "." << patch_ver << "]," << evo::warn;
+      evo::log::get() << _logger_prefix << "But the installed version is " << EVO_MBED_TOOLS_VER << evo::warn;
+      evo::log::get() << _logger_prefix << "Please update the evo_mbed firmware or downgrade the ROS Node (not recommended)";
+   }
+
+   return success;
 }
 
 void BaseControllerROS::checkAndApplyCmdVel()
