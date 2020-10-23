@@ -514,6 +514,10 @@ void BaseControllerROS::checkAndApplyCmdVel()
    {
       _mecanum_drive.setCmdVel(_cmd_vel);
    }
+   else
+   {
+      evo::log::get() << _logger_prefix << "lift active! can't set cmd vel!" << evo::warn;
+   } 
 }
 
 void BaseControllerROS::checkAndApplyCmdLift()
