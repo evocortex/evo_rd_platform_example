@@ -110,6 +110,7 @@ class BaseControllerROS
    void cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel);
    void checkAndApplyCmdVel();
 
+   bool checkFirmwareVersion(const int major_ver, const int minor_ver, const int patch_ver);
    // lift
    void publishLiftPos();
    void cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift);
