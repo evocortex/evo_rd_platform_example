@@ -111,6 +111,10 @@ class BaseControllerROS
    void checkAndApplyCmdVel();
 
    bool checkFirmwareVersion(const int major_ver, const int minor_ver, const int patch_ver);
+
+   // TODO
+   bool resetOdometry();
+
    // lift
    void publishLiftPos();
    void cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift);
