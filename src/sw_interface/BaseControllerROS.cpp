@@ -448,12 +448,17 @@ void BaseControllerROS::cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift)
 
 void BaseControllerROS::checkAndApplyCmdVel()
 {
+   static ros::Time throttle_timestamp = ros::Time::now();
+
    // check timestamp
    if(ros::Time::now().toSec() > (_stamp_cmd_vel.toSec() + _timeout_cmd_vel))
    {
-      evo::log::get() << _logger_prefix
-                      << "cmd vel timeout detected! stopping robot.." << evo::warn;
-      
+      if(ros::Time::now().toSec() > (throttle_timestamp.toSec() + ros::Duration(1.0).toSec()))
+      {
+         evo::log::get() << _logger_prefix << "cmd vel timeout detected! stopping robot.." << evo::warn;
+         throttle_timestamp = ros::Time::now();
+      }
+
       const MecanumVel zero_vel;
       _cmd_vel = zero_vel;
    }
