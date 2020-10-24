@@ -36,6 +36,8 @@
 #include "std_msgs/Float32.h"
 #include "sensor_msgs/JointState.h"
 
+#include "evo_rd_platform_example/resetOdom.h"
+
 namespace evo {
 
 class BaseControllerROS
@@ -66,6 +68,7 @@ class BaseControllerROS
 
    // ROS
    ros::NodeHandle _nh;
+   ros::ServiceServer _srvServ_reset_odom;
    ros::Subscriber _sub_cmd_vel;
    ros::Publisher _pub_odom;
    ros::Publisher _pub_enable_signal_off;
@@ -112,8 +115,7 @@ class BaseControllerROS
 
    bool checkFirmwareVersion(const int major_ver, const int minor_ver, const int patch_ver);
 
-   // TODO
-   bool resetOdometry();
+   bool resetOdometry(evo_rd_platform_example::resetOdomRequest& req, evo_rd_platform_example::resetOdomResponse& res);
 
    // lift
    void publishLiftPos();

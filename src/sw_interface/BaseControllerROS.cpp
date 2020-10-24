@@ -98,7 +98,7 @@ bool BaseControllerROS::init()
       _mecanum_drive.debugMotorMapping();
 
    // parameters for this class
-   std::string topic_sub_cmd_vel, topic_sub_cmd_lift, topic_pub_odom, topic_pub_enable_signal_off;
+   std::string topic_sub_cmd_vel, topic_sub_cmd_lift, topic_pub_odom, topic_pub_enable_signal_off, topic_srv_reset_odom;
    double com_timeout_s, loop_rate_hz;
    privateNh.param("loop_rate_hz", loop_rate_hz, 50.0);
    _loop_rate_hz = ros::Rate(loop_rate_hz);
@@ -108,6 +108,7 @@ bool BaseControllerROS::init()
    privateNh.param("topic_pub_enable_signal_off", topic_pub_enable_signal_off, std::string("enable_signal_off"));
    privateNh.param("topic_sub_cmd_vel", topic_sub_cmd_vel, std::string("cmd_vel"));
    privateNh.param("topic_sub_cmd_lift", topic_sub_cmd_lift, std::string("cmd_lift"));
+   privateNh.param("topic_srv_reset_odom", topic_srv_reset_odom, std::string("reset_odom"));
 
    // timeouts
    privateNh.param("com_timeout_s", com_timeout_s, 0.1);
@@ -151,6 +152,8 @@ bool BaseControllerROS::init()
    }
 
    // setup connections
+   _srvServ_reset_odom = _nh.advertiseService(topic_srv_reset_odom, &BaseControllerROS::resetOdometry, this);
+
    _sub_cmd_vel = _nh.subscribe<geometry_msgs::Twist>(topic_sub_cmd_vel, 1, &BaseControllerROS::cbCmdVel, this);
    _pub_odom = _nh.advertise<nav_msgs::Odometry>(topic_pub_odom, 1);
    _pub_enable_signal_off = _nh.advertise<std_msgs::Bool>(topic_pub_enable_signal_off, 1);
@@ -430,14 +433,6 @@ void BaseControllerROS::publishBaseStatus()
    // TODO: lift?
 }
 
-void BaseControllerROS::cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel)
-{
-   _stamp_cmd_vel     = ros::Time::now();
-   _cmd_vel._x_ms     = cmd_vel->linear.x;
-   _cmd_vel._y_ms     = cmd_vel->linear.y;
-   _cmd_vel._yaw_rads = cmd_vel->angular.z;
-}
-
 void BaseControllerROS::publishLiftPos()
 {
    const std::vector<float> positions = _lift_controller.getPositionVec();
@@ -449,6 +444,28 @@ void BaseControllerROS::publishLiftPos()
       _pub_lift_pos_vec[idx++].publish(data);
    }
    std::cout << std::endl;
+}
+
+void BaseControllerROS::cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel)
+{
+   _stamp_cmd_vel     = ros::Time::now();
+   _cmd_vel._x_ms     = cmd_vel->linear.x;
+   _cmd_vel._y_ms     = cmd_vel->linear.y;
+   _cmd_vel._yaw_rads = cmd_vel->angular.z;
+}
+
+bool BaseControllerROS::resetOdometry(evo_rd_platform_example::resetOdomRequest& req, evo_rd_platform_example::resetOdomResponse& res)
+{
+   evo::log::get() << _logger_prefix << "Resetting Odometry.." << evo::info;
+
+   if(!_mecanum_drive.resetEncoders())
+   {
+       evo::log::get() << _logger_prefix << "Couldn't reset encoders!" <<  evo::error;
+       return false;
+   }   
+
+   _odom_pose.reset();
+   return true;
 }
 
 void BaseControllerROS::cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift)
