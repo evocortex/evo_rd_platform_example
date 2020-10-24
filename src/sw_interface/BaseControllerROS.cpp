@@ -1,5 +1,5 @@
 //###############################################################
-//# Copyright (C) 2019, Evocortex GmbH, All rights reserved.    #
+//# Copyright (C) 2020, Evocortex GmbH, All rights reserved.    #
 //# Further regulations can be found in LICENSE file.           #
 //###############################################################
 
@@ -9,8 +9,8 @@
  *
  * @brief Base Controller Interface for ROS and EvoRobot com
  *
- * @version 0.2
- * @date 2020-06-03
+ * @version 0.3
+ * @date 2020-20-24
  *
  * @copyright Copyright (c) 2020 Evocortex GmbH
  *
