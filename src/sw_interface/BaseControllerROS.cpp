@@ -503,7 +503,7 @@ bool BaseControllerROS::checkFirmwareVersion(const int major_ver, const int mino
       evo::log::get() << _logger_prefix << "Your ROS Node Version expects the evo_mbed firmware to be at version ["
                      << major_ver << "." << minor_ver << "." << patch_ver << "]," << evo::warn;
       evo::log::get() << _logger_prefix << "But the installed version is " << EVO_MBED_TOOLS_VER << evo::warn;
-      evo::log::get() << _logger_prefix << "Please update the evo_mbed firmware or downgrade the ROS Node (not recommended)";
+      evo::log::get() << _logger_prefix << "Please update the evo_mbed firmware or downgrade the ROS Node (not recommended)" << evo::warn;
    }
 
    return success;
@@ -706,7 +706,9 @@ void BaseControllerROS::main_loop()
       evo::log::get() << _logger_prefix << "[1] Restart node and check if init is successful" << evo::error;
       evo::log::get() << _logger_prefix << "[2] Check if the Motorshields are powered" << evo::error;
       evo::log::get() << _logger_prefix << "[3] Check if the CAN Interface is initialized" << evo::error;
-      evo::log::get() << _logger_prefix << "[4] Check if some motor connections are broken" << evo::error;
+      evo::log::get() << _logger_prefix << "[4] Check if all parameters are set correctly" << evo::error;
+      evo::log::get() << _logger_prefix << "[5] Check if some motor connections are broken" << evo::error;
+      evo::log::get() << _logger_prefix << "[6] Update firmware if versions mismatch" << evo::error;
       return;
    }
    else
