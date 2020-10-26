@@ -458,12 +458,16 @@ bool BaseControllerROS::resetOdometry(evo_rd_platform_example::resetOdomRequest&
 {
    evo::log::get() << _logger_prefix << "Resetting Odometry.." << evo::info;
 
+   // stop and disable motors to prevent reset mid drive
+   _mecanum_drive.setCmdVel(MecanumVel());
+   _motor_handler.disableAllDriveMotors();
    if(!_mecanum_drive.resetEncoders())
    {
        evo::log::get() << _logger_prefix << "Couldn't reset encoders!" <<  evo::error;
        return false;
-   }   
-
+   }
+   _motor_handler.enableAllDriveMotors();
+   
    _odom_pose.reset();
    return true;
 }
