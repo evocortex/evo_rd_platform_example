@@ -7,7 +7,7 @@ set(CMAKE_THREAD_PREFERE_PTHREAD)
 set(THREADS_PREFERE_PTHREAD_FLAG)
 find_package(Threads REQUIRED)
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 find_package(evo-mbed-tools REQUIRED)
 
 add_compile_options(-std=c++17  -DROS -O2)
