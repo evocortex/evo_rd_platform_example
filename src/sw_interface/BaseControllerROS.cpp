@@ -160,6 +160,7 @@ bool BaseControllerROS::init()
    // finish flag
    evo::log::get() << _logger_prefix << "finished init process!" << evo::info;
    _is_initialized = true;
+   return true;
 }
 
 std::vector<MotorShieldConfig> BaseControllerROS::loadConfigROS(ros::NodeHandle& privateNh)
