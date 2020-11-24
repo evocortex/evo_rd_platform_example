@@ -19,7 +19,6 @@ find_package(catkin REQUIRED
     roscpp
     rospy
     tf
-    nav_msgs
     sensor_msgs
     message_generation
     evo_dcdc_shield_interface
