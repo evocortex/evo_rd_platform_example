@@ -3,6 +3,13 @@ project(evo_rd_platform_example)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 #add_compile_options(-std=c++11 -O2)
+set(CMAKE_THREAD_PREFERE_PTHREAD)
+set(THREADS_PREFERE_PTHREAD_FLAG)
+find_package(Threads REQUIRED)
+
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
+find_package(evo-mbed-tools REQUIRED)
+
 add_compile_options(-std=c++17  -DROS -O2)
 
 ## Find catkin macros and libraries
@@ -185,27 +192,27 @@ add_dependencies(tof_controller_node ${catkin_EXPORTED_TARGETS}
 
 target_link_libraries(dcdc_controller_node
    ${catkin_LIBRARIES}
-   evo-mbed-tools
-   pthread
+   evo-mbed-tools::evo-mbed-tools
+   Threads::Threads
  )
 
 target_link_libraries(base_controller_node
    ${catkin_LIBRARIES}
-   evo-mbed-tools
-   pthread
+   evo-mbed-tools::evo-mbed-tools
+   Threads::Threads
  )
 
 # MMA: this is moved into the sim package - idk if it could be here 
 # target_link_libraries(sim_base_controller_node
 #   ${catkin_LIBRARIES}
-#   evo-mbed-tools
-#   pthread
+#   evo-mbed-tools::evo-mbed-tools
+#	Threads::Threads
 # )
 
 target_link_libraries(tof_controller_node
    ${catkin_LIBRARIES}
-   evo-mbed-tools
-   pthread
+   evo-mbed-tools::evo-mbed-tools
+   Threads::Threads
  )
 
 #############
