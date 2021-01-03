@@ -43,7 +43,7 @@ bool BaseControllerROS::init()
    privateNh.param("firmware_major_version", fw_major_ver, 1);
    privateNh.param("firmware_minor_version", fw_minor_ver, 0);
    privateNh.param("firmware_patch_version", fw_patch_ver, 0);
-   if(!checkFirmwareVersion(fw_major_ver, fw_minor_ver, fw_patch_ver))
+   if(!checkMbedLibVersion(fw_major_ver, fw_minor_ver, fw_patch_ver))
    {      
       evo::log::get() << _logger_prefix << "Can't init with mismatching firmware versions!" << evo::error;
       return false;
@@ -478,7 +478,7 @@ void BaseControllerROS::cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift)
    _cmd_lift       = cmd_lift->data;
 }
 
-bool BaseControllerROS::checkFirmwareVersion(const int major_ver, const int minor_ver, const int patch_ver)
+bool BaseControllerROS::checkMbedLibVersion(const int major_ver, const int minor_ver, const int patch_ver)
 {
    bool success = true;
    if(EVO_MBED_TOOLS_VER_MAJOR != major_ver)
@@ -488,10 +488,11 @@ bool BaseControllerROS::checkFirmwareVersion(const int major_ver, const int mino
       success &= false;
    }
 
-   if(EVO_MBED_TOOLS_VER_MINOR != minor_ver)
+   // should be backwards compatible
+   if(EVO_MBED_TOOLS_VER_MINOR < minor_ver)
    {
-      evo::log::get() << _logger_prefix << "Minor Version mismatch! Expected [" 
-                      << minor_ver << "] but evo_mbed is [" << EVO_MBED_TOOLS_VER_MINOR << "]!" <<  evo::error;
+      evo::log::get() << _logger_prefix << "Detected Minor Version mismatch! Expected [" 
+                      << minor_ver << "] but evo_mbed is [" << EVO_MBED_TOOLS_VER_MINOR << "]!" <<  evo::warn;
       success &= false;
    }
 

@@ -113,7 +113,7 @@ class BaseControllerROS
    void cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel);
    void checkAndApplyCmdVel();
 
-   bool checkFirmwareVersion(const int major_ver, const int minor_ver, const int patch_ver);
+   bool checkMbedLibVersion(const int major_ver, const int minor_ver, const int patch_ver);
 
    bool resetOdometry(evo_rd_platform_example::resetOdomRequest& req, evo_rd_platform_example::resetOdomResponse& res);
 
