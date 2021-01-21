@@ -1,5 +1,5 @@
 //###############################################################
-//# Copyright (C) 2019, Evocortex GmbH, All rights reserved.    #
+//# Copyright (C) 2020, Evocortex GmbH, All rights reserved.    #
 //# Further regulations can be found in LICENSE file.           #
 //###############################################################
 
@@ -9,8 +9,8 @@
  *
  * @brief Base Controller Interface for ROS and EvoRobot com
  *
- * @version 0.2
- * @date 2020-06-03
+ * @version 0.3
+ * @date 2020-20-24
  *
  * @copyright Copyright (c) 2020 Evocortex GmbH
  *
@@ -37,6 +37,17 @@ bool BaseControllerROS::init()
    bool success = true;
    // load all relevant parameters
    ros::NodeHandle privateNh("~");
+
+   // initial firmware checkup
+   int fw_major_ver, fw_minor_ver, fw_patch_ver;
+   privateNh.param("firmware_major_version", fw_major_ver, 1);
+   privateNh.param("firmware_minor_version", fw_minor_ver, 0);
+   privateNh.param("firmware_patch_version", fw_patch_ver, 0);
+   if(!checkMbedLibVersion(fw_major_ver, fw_minor_ver, fw_patch_ver))
+   {      
+      evo::log::get() << _logger_prefix << "Can't init with mismatching firmware versions!" << evo::error;
+      return false;
+   }
 
    // parameters for the motor manager
    std::string can_interface_name;
@@ -87,7 +98,7 @@ bool BaseControllerROS::init()
       _mecanum_drive.debugMotorMapping();
 
    // parameters for this class
-   std::string topic_sub_cmd_vel, topic_sub_cmd_lift, topic_pub_odom, topic_pub_enable_signal_off;
+   std::string topic_sub_cmd_vel, topic_sub_cmd_lift, topic_pub_odom, topic_pub_enable_signal_off, topic_srv_reset_odom;
    double com_timeout_s, loop_rate_hz;
    privateNh.param("loop_rate_hz", loop_rate_hz, 50.0);
    _loop_rate_hz = ros::Rate(loop_rate_hz);
@@ -97,6 +108,7 @@ bool BaseControllerROS::init()
    privateNh.param("topic_pub_enable_signal_off", topic_pub_enable_signal_off, std::string("enable_signal_off"));
    privateNh.param("topic_sub_cmd_vel", topic_sub_cmd_vel, std::string("cmd_vel"));
    privateNh.param("topic_sub_cmd_lift", topic_sub_cmd_lift, std::string("cmd_lift"));
+   privateNh.param("topic_srv_reset_odom", topic_srv_reset_odom, std::string("reset_odom"));
 
    // timeouts
    privateNh.param("com_timeout_s", com_timeout_s, 0.1);
@@ -140,6 +152,8 @@ bool BaseControllerROS::init()
    }
 
    // setup connections
+   _srvServ_reset_odom = _nh.advertiseService(topic_srv_reset_odom, &BaseControllerROS::resetOdometry, this);
+
    _sub_cmd_vel = _nh.subscribe<geometry_msgs::Twist>(topic_sub_cmd_vel, 1, &BaseControllerROS::cbCmdVel, this);
    _pub_odom = _nh.advertise<nav_msgs::Odometry>(topic_pub_odom, 1);
    _pub_enable_signal_off = _nh.advertise<std_msgs::Bool>(topic_pub_enable_signal_off, 1);
@@ -420,14 +434,6 @@ void BaseControllerROS::publishBaseStatus()
    // TODO: lift?
 }
 
-void BaseControllerROS::cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel)
-{
-   _stamp_cmd_vel     = ros::Time::now();
-   _cmd_vel._x_ms     = cmd_vel->linear.x;
-   _cmd_vel._y_ms     = cmd_vel->linear.y;
-   _cmd_vel._yaw_rads = cmd_vel->angular.z;
-}
-
 void BaseControllerROS::publishLiftPos()
 {
    const std::vector<float> positions = _lift_controller.getPositionVec();
@@ -441,20 +447,87 @@ void BaseControllerROS::publishLiftPos()
    std::cout << std::endl;
 }
 
+void BaseControllerROS::cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel)
+{
+   _stamp_cmd_vel     = ros::Time::now();
+   _cmd_vel._x_ms     = cmd_vel->linear.x;
+   _cmd_vel._y_ms     = cmd_vel->linear.y;
+   _cmd_vel._yaw_rads = cmd_vel->angular.z;
+}
+
+bool BaseControllerROS::resetOdometry(evo_rd_platform_example::resetOdomRequest& req, evo_rd_platform_example::resetOdomResponse& res)
+{
+   evo::log::get() << _logger_prefix << "Resetting Odometry.." << evo::info;
+
+   // stop and disable motors to prevent reset mid drive
+   _mecanum_drive.setCmdVel(MecanumVel());
+   _motor_handler.disableAllDriveMotors();
+   if(!_mecanum_drive.resetEncoders())
+   {
+       evo::log::get() << _logger_prefix << "Couldn't reset encoders!" <<  evo::error;
+       return false;
+   }
+   _motor_handler.enableAllDriveMotors();
+   
+   _odom_pose.reset();
+   return true;
+}
+
 void BaseControllerROS::cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift)
 {
    _stamp_cmd_lift = ros::Time::now();
    _cmd_lift       = cmd_lift->data;
 }
 
+bool BaseControllerROS::checkMbedLibVersion(const int major_ver, const int minor_ver, const int patch_ver)
+{
+   bool success = true;
+   if(EVO_MBED_TOOLS_VER_MAJOR != major_ver)
+   {
+      evo::log::get() << _logger_prefix << "Major Version mismatch! Expected [" 
+                      << major_ver << "] but evo_mbed is [" << EVO_MBED_TOOLS_VER_MAJOR << "]!" <<  evo::error;
+      success &= false;
+   }
+
+   // should be backwards compatible
+   if(EVO_MBED_TOOLS_VER_MINOR < minor_ver)
+   {
+      evo::log::get() << _logger_prefix << "Detected Minor Version mismatch! Expected [" 
+                      << minor_ver << "] but evo_mbed is [" << EVO_MBED_TOOLS_VER_MINOR << "]!" <<  evo::warn;
+      success &= false;
+   }
+
+   // patch is not critical, so dont end here
+   if(EVO_MBED_TOOLS_VER_PATCH < patch_ver)
+   {
+      evo::log::get() << _logger_prefix << "Detected Patch Version mismatch! Expected at least [" 
+                      << patch_ver << "] but evo_mbed is [" << EVO_MBED_TOOLS_VER_MINOR << "]!" <<  evo::warn;
+   }
+
+   if(!success)
+   {
+      evo::log::get() << _logger_prefix << "Your ROS Node Version expects the evo_mbed firmware to be at version ["
+                     << major_ver << "." << minor_ver << "." << patch_ver << "]," << evo::warn;
+      evo::log::get() << _logger_prefix << "But the installed version is " << EVO_MBED_TOOLS_VER << evo::warn;
+      evo::log::get() << _logger_prefix << "Please update the evo_mbed firmware or downgrade the ROS Node (not recommended)" << evo::warn;
+   }
+
+   return success;
+}
+
 void BaseControllerROS::checkAndApplyCmdVel()
 {
+   static ros::Time throttle_timestamp = ros::Time::now();
+
    // check timestamp
    if(ros::Time::now().toSec() > (_stamp_cmd_vel.toSec() + _timeout_cmd_vel))
    {
-      evo::log::get() << _logger_prefix
-                      << "cmd vel timeout detected! stopping robot.." << evo::warn;
-      
+      if(ros::Time::now().toSec() > (throttle_timestamp.toSec() + ros::Duration(1.0).toSec()))
+      {
+         evo::log::get() << _logger_prefix << "cmd vel timeout detected! stopping robot.." << evo::warn;
+         throttle_timestamp = ros::Time::now();
+      }
+
       const MecanumVel zero_vel;
       _cmd_vel = zero_vel;
    }
@@ -464,6 +537,10 @@ void BaseControllerROS::checkAndApplyCmdVel()
    {
       _mecanum_drive.setCmdVel(_cmd_vel);
    }
+   else
+   {
+      evo::log::get() << _logger_prefix << "lift active! can't set cmd vel!" << evo::warn;
+   } 
 }
 
 void BaseControllerROS::checkAndApplyCmdLift()
@@ -630,8 +707,14 @@ void BaseControllerROS::main_loop()
 {
    if(!_is_initialized)
    {
-      evo::log::get() << _logger_prefix << "not initialized! check your code!"
-                      << evo::error;
+      evo::log::get() << _logger_prefix << "Node is not initialized!" << evo::error;
+      evo::log::get() << _logger_prefix << "Possible Solutions:" << evo::error;
+      evo::log::get() << _logger_prefix << "[1] Restart node and check if init is successful" << evo::error;
+      evo::log::get() << _logger_prefix << "[2] Check if the Motorshields are powered" << evo::error;
+      evo::log::get() << _logger_prefix << "[3] Check if the CAN Interface is initialized" << evo::error;
+      evo::log::get() << _logger_prefix << "[4] Check if all parameters are set correctly" << evo::error;
+      evo::log::get() << _logger_prefix << "[5] Check if some motor connections are broken" << evo::error;
+      evo::log::get() << _logger_prefix << "[6] Update firmware if versions mismatch" << evo::error;
       return;
    }
    else

@@ -9,8 +9,8 @@
  *
  * @brief Base Controller Interface for ROS and EvoRobot com
  *
- * @version 0.2
- * @date 2020-06-03
+ * @version 0.3
+ * @date 2020-10-24
  *
  * @copyright Copyright (c) 2020 Evocortex GmbH
  *
@@ -20,6 +20,8 @@
 #define BASECONTROLLERROS_H
 
 #include "evo_logger/log/Logger.h"
+
+#include "evo_mbed/Version.h"
 
 #include "evo_robot_base_interface/LiftController.h"
 #include "evo_robot_base_interface/MecanumDrive.h"
@@ -33,6 +35,8 @@
 #include "std_msgs/Int8.h"
 #include "std_msgs/Float32.h"
 #include "sensor_msgs/JointState.h"
+
+#include "evo_rd_platform_example/resetOdom.h"
 
 namespace evo {
 
@@ -64,6 +68,7 @@ class BaseControllerROS
 
    // ROS
    ros::NodeHandle _nh;
+   ros::ServiceServer _srvServ_reset_odom;
    ros::Subscriber _sub_cmd_vel;
    ros::Publisher _pub_odom;
    ros::Publisher _pub_enable_signal_off;
@@ -107,6 +112,10 @@ class BaseControllerROS
 
    void cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel);
    void checkAndApplyCmdVel();
+
+   bool checkMbedLibVersion(const int major_ver, const int minor_ver, const int patch_ver);
+
+   bool resetOdometry(evo_rd_platform_example::resetOdomRequest& req, evo_rd_platform_example::resetOdomResponse& res);
 
    // lift
    void publishLiftPos();
