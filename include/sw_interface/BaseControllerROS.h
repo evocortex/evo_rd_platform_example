@@ -115,7 +115,8 @@ class BaseControllerROS
 
    bool checkMbedLibVersion(const int major_ver, const int minor_ver, const int patch_ver);
 
-   bool resetOdometry(evo_rd_platform_example::resetOdomRequest& req, evo_rd_platform_example::resetOdomResponse& res);
+   bool resetOdometry();
+   bool srvResetOdometry(evo_rd_platform_example::resetOdomRequest& req, evo_rd_platform_example::resetOdomResponse& res);
 
    // lift
    void publishLiftPos();

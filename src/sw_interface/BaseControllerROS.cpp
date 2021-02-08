@@ -152,7 +152,7 @@ bool BaseControllerROS::init()
    }
 
    // setup connections
-   _srvServ_reset_odom = _nh.advertiseService(topic_srv_reset_odom, &BaseControllerROS::resetOdometry, this);
+   _srvServ_reset_odom = _nh.advertiseService(topic_srv_reset_odom, &BaseControllerROS::srvResetOdometry, this);
 
    _sub_cmd_vel = _nh.subscribe<geometry_msgs::Twist>(topic_sub_cmd_vel, 1, &BaseControllerROS::cbCmdVel, this);
    _pub_odom = _nh.advertise<nav_msgs::Odometry>(topic_pub_odom, 1);
@@ -380,6 +380,14 @@ void BaseControllerROS::publishOdomTF(const MecanumPose& odom_pose)
    tf::Quaternion pose_quaterion = tf::createQuaternionFromYaw(_odom_pose._yaw_rad);
    tf_odom.setRotation(pose_quaterion);
 
+   // try to prevent false quaternions (may happen with faulty encoder values)
+   if(pose_quaterion.dot(pose_quaterion) == 0)
+   {
+      evo::log::get() << _logger_prefix << "Detected faulty odometry!" << evo::error;
+      resetOdometry();
+      return;
+   }
+
    _tf_pub_odom.sendTransform(tf_odom);
 }
 
@@ -454,7 +462,7 @@ void BaseControllerROS::cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel)
    _cmd_vel._yaw_rads = cmd_vel->angular.z;
 }
 
-bool BaseControllerROS::resetOdometry(evo_rd_platform_example::resetOdomRequest& req, evo_rd_platform_example::resetOdomResponse& res)
+bool BaseControllerROS::resetOdometry()
 {
    evo::log::get() << _logger_prefix << "Resetting Odometry.." << evo::info;
 
@@ -470,6 +478,12 @@ bool BaseControllerROS::resetOdometry(evo_rd_platform_example::resetOdomRequest&
    
    _odom_pose.reset();
    return true;
+}
+
+bool BaseControllerROS::srvResetOdometry(evo_rd_platform_example::resetOdomRequest& req, 
+                                         evo_rd_platform_example::resetOdomResponse& res)
+{
+   return resetOdometry();
 }
 
 void BaseControllerROS::cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift)
