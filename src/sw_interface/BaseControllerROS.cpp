@@ -61,20 +61,43 @@ bool BaseControllerROS::init()
       evo::log::get() << _logger_prefix << "--> Exit" << evo::error;
       return false;
    }
+
+   // set desired drive type
+
+   std::string kinematic_model;
+   privateNh.param("kinematic_model", kinematic_model, std::string("mecanum"));
+   if(kinematic_model == "mecanum")
+   {
+      _robot_drive_model = std::make_shared<MecanumDrive>();
+   }
+   else if(kinematic_model == "diff4")
+   {
+      _robot_drive_model = std::make_shared<Diff4Drive>();
+   }
+   else
+   {
+      evo::log::get() << _logger_prefix << "Unknown kinematic model '" << kinematic_model << "'" << evo::error;
+      evo::log::get() << _logger_prefix << "--> Exit" << evo::error;
+      return false;
+   }
+
+
    _motor_handler.setConfig(loadConfigROS(privateNh));
    success &= _motor_handler.initFromConfig();
-   _motor_handler.initMotorMapping(_mecanum_drive, _lift_controller);
+   _motor_handler.initMotorMapping(*_robot_drive_model, _lift_controller);
    success &= _motor_handler.enableAllMotors();
 
-   // parameters for the mecanum drive
+
+
+   // parameters for the drive
    double wheel_radius_in_m, wheel_distance_front_back_in_m, wheel_distance_left_right_in_m;
    privateNh.param("wheel_radius_in_m", wheel_radius_in_m, 0.0);
    privateNh.param("wheel_distance_front_back_in_m", wheel_distance_front_back_in_m, 0.0);
    privateNh.param("wheel_distance_left_right_in_m", wheel_distance_left_right_in_m, 0.0);
-   _mecanum_drive.setWheelRadiusInM(wheel_radius_in_m);
-   _mecanum_drive.setWheelDistanceFrontBackInM(wheel_distance_front_back_in_m);
-   _mecanum_drive.setWheelDistanceLeftRightInM(wheel_distance_left_right_in_m);
-   success &= _mecanum_drive.checkInitState();
+   _robot_drive_model->setWheelRadiusInM(wheel_radius_in_m);
+   _robot_drive_model->setWheelDistanceFrontBackInM(wheel_distance_front_back_in_m);
+   _robot_drive_model->setWheelDistanceLeftRightInM(wheel_distance_left_right_in_m);
+   success &= _robot_drive_model->checkInitState();
 
    if(!success)
    {
@@ -95,7 +118,7 @@ bool BaseControllerROS::init()
    bool debug_motor_mapping = false;
    privateNh.param("debug_motor_mapping", debug_motor_mapping, false);
    if(debug_motor_mapping)
-      _mecanum_drive.debugMotorMapping();
+      _robot_drive_model->debugMotorMapping();
 
    // parameters for this class
    std::string topic_sub_cmd_vel, topic_sub_cmd_lift, topic_pub_odom, topic_pub_enable_signal_off, topic_srv_reset_odom;
@@ -152,7 +175,7 @@ bool BaseControllerROS::init()
    }
 
    // setup connections
-   _srvServ_reset_odom = _nh.advertiseService(topic_srv_reset_odom, &BaseControllerROS::resetOdometry, this);
+   _srvServ_reset_odom = _nh.advertiseService(topic_srv_reset_odom, &BaseControllerROS::srvResetOdometry, this);
 
    _sub_cmd_vel = _nh.subscribe<geometry_msgs::Twist>(topic_sub_cmd_vel, 1, &BaseControllerROS::cbCmdVel, this);
    _pub_odom = _nh.advertise<nav_msgs::Odometry>(topic_pub_odom, 1);
@@ -317,8 +340,8 @@ std::vector<MotorShieldConfig> BaseControllerROS::loadConfigROS(ros::NodeHandle&
    return mc_config_ros;
 }
 
-void BaseControllerROS::publishOdomMsg(const MecanumVel& odom_vel,
-                                       const MecanumPose& odom_pose)
+void BaseControllerROS::publishOdomMsg(const Vel2d& odom_vel,
+                                       const Pose2d& odom_pose)
 {
    // create odom nav msg
    nav_msgs::Odometry odom;
@@ -366,7 +389,7 @@ void BaseControllerROS::publishOdomMsg(const MecanumVel& odom_vel,
    _pub_odom.publish(odom);
 }
 
-void BaseControllerROS::publishOdomTF(const MecanumPose& odom_pose)
+void BaseControllerROS::publishOdomTF(const Pose2d& odom_pose)
 {
    tf::StampedTransform tf_odom;
    // header
@@ -381,11 +404,19 @@ void BaseControllerROS::publishOdomTF(const MecanumPose& odom_pose)
    tf::Quaternion pose_quaterion = tf::createQuaternionFromYaw(_odom_pose._yaw_rad);
    tf_odom.setRotation(pose_quaterion);
 
+   // try to prevent false quaternions (may happen with faulty encoder values)
+   if(pose_quaterion.dot(pose_quaterion) == 0)
+   {
+      evo::log::get() << _logger_prefix << "Detected faulty odometry!" << evo::error;
+      resetOdometry();
+      return;
+   }
+
    _tf_pub_odom.sendTransform(tf_odom);
 }
 
-void BaseControllerROS::publishJointStates(const MecanumWheelData& wheel_positions,
-                                           const MecanumWheelData& wheel_rotations)
+void BaseControllerROS::publishJointStates(const WheelData& wheel_positions,
+                                           const WheelData& wheel_rotations)
 {
    _joint_state_msg.position[0] = wheel_positions.front_left;
    _joint_state_msg.position[1] = wheel_positions.front_right;
@@ -410,11 +441,11 @@ void BaseControllerROS::publishJointStates(const MecanumWheelData& wheel_positio
 void BaseControllerROS::publishBaseStatus()
 {
    // get drive data
-   MecanumVel odom_vel;
-   MecanumPose odom_pose_increment;
-   MecanumWheelData wheel_positions;
-   MecanumWheelData wheel_velocities;
-   _mecanum_drive.getOdomComplete(odom_vel, odom_pose_increment, 
+   Vel2d odom_vel;
+   Pose2d odom_pose_increment;
+   WheelData wheel_positions;
+   WheelData wheel_velocities;
+   _robot_drive_model->getOdomComplete(odom_vel, odom_pose_increment, 
                                  wheel_positions, wheel_velocities);
 
    // update pose
@@ -455,14 +486,14 @@ void BaseControllerROS::cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel)
    _cmd_vel._yaw_rads = cmd_vel->angular.z;
 }
 
-bool BaseControllerROS::resetOdometry(evo_rd_platform_example::resetOdomRequest& req, evo_rd_platform_example::resetOdomResponse& res)
+bool BaseControllerROS::resetOdometry()
 {
    evo::log::get() << _logger_prefix << "Resetting Odometry.." << evo::info;
 
    // stop and disable motors to prevent reset mid drive
-   _mecanum_drive.setCmdVel(MecanumVel());
+   _robot_drive_model->setCmdVel(Vel2d());
    _motor_handler.disableAllDriveMotors();
-   if(!_mecanum_drive.resetEncoders())
+   if(!_robot_drive_model->resetEncoders())
    {
        evo::log::get() << _logger_prefix << "Couldn't reset encoders!" <<  evo::error;
        return false;
@@ -471,6 +502,12 @@ bool BaseControllerROS::resetOdometry(evo_rd_platform_example::resetOdomRequest&
    
    _odom_pose.reset();
    return true;
+}
+
+bool BaseControllerROS::srvResetOdometry(evo_rd_platform_example::resetOdomRequest& req, 
+                                         evo_rd_platform_example::resetOdomResponse& res)
+{
+   return resetOdometry();
 }
 
 void BaseControllerROS::cbCmdLift(const std_msgs::Int8::ConstPtr& cmd_lift)
@@ -528,14 +565,14 @@ void BaseControllerROS::checkAndApplyCmdVel()
          throttle_timestamp = ros::Time::now();
       }
 
-      const MecanumVel zero_vel;
+      const Vel2d zero_vel;
       _cmd_vel = zero_vel;
    }
 
    // only set cmd_vel if lift is not active
    if(!_lift_active || !_enable_lift_control)
    {
-      _mecanum_drive.setCmdVel(_cmd_vel);
+      _robot_drive_model->setCmdVel(_cmd_vel);
    }
    else
    {
@@ -579,8 +616,8 @@ void BaseControllerROS::checkAndApplyCmdLift()
 
       // Try to disable all drive motors to avoid blockage of lift mechanism
       // Stopp movement
-      const MecanumVel zero_vel;
-      _mecanum_drive.setCmdVel(zero_vel);
+      const Vel2d zero_vel;
+      _robot_drive_model->setCmdVel(zero_vel);
 
       // Disable all drives motors to avoid blockage of the lift mechanism
       if(_motor_handler.disableAllDriveMotors())
@@ -691,8 +728,8 @@ const bool BaseControllerROS::checkStatus()
       _lift_controller.setMovingDirection(0);
 
       // Reset command velocity
-      const MecanumVel zero_vel;
-      _mecanum_drive.setCmdVel(zero_vel);
+      const Vel2d zero_vel;
+      _robot_drive_model->setCmdVel(zero_vel);
    }
 
    

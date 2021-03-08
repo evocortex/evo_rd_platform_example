@@ -23,6 +23,8 @@
 
 #include "evo_mbed/Version.h"
 
+#include "evo_robot_base_interface/2dKinematics.h"
+#include "evo_robot_base_interface/Diff4Drive.h"
 #include "evo_robot_base_interface/LiftController.h"
 #include "evo_robot_base_interface/MecanumDrive.h"
 #include "evo_robot_base_interface/MotorManager.h"
@@ -49,13 +51,13 @@ class BaseControllerROS
    MotorManager _motor_handler;
 
    // Mecanum Drive
-   MecanumDrive _mecanum_drive;
-   MecanumCovariance _mecanum_covariance;
+   std::shared_ptr<Drive2d> _robot_drive_model;
+   Cov2d _mecanum_covariance;
 
    double _timeout_cmd_vel;
    ros::Time _stamp_cmd_vel;
-   MecanumVel _cmd_vel;
-   MecanumPose _odom_pose;
+   Vel2d _cmd_vel;
+   Pose2d _odom_pose;
 
    // Lift Controller
    LiftController _lift_controller;
@@ -105,9 +107,9 @@ class BaseControllerROS
 
    // drives
    void publishOdom();
-   void publishOdomMsg(const MecanumVel& odom_vel, const MecanumPose& odom_pose);
-   void publishOdomTF(const MecanumPose& odom_pose);
-   void publishJointStates(const MecanumWheelData& wheel_positions, const MecanumWheelData& wheel_rotations);
+   void publishOdomMsg(const Vel2d& odom_vel, const Pose2d& odom_pose);
+   void publishOdomTF(const Pose2d& odom_pose);
+   void publishJointStates(const WheelData& wheel_positions, const WheelData& wheel_rotations);
 
 
    void cbCmdVel(const geometry_msgs::Twist::ConstPtr& cmd_vel);
@@ -115,7 +117,8 @@ class BaseControllerROS
 
    bool checkMbedLibVersion(const int major_ver, const int minor_ver, const int patch_ver);
 
-   bool resetOdometry(evo_rd_platform_example::resetOdomRequest& req, evo_rd_platform_example::resetOdomResponse& res);
+   bool resetOdometry();
+   bool srvResetOdometry(evo_rd_platform_example::resetOdomRequest& req, evo_rd_platform_example::resetOdomResponse& res);
 
    // lift
    void publishLiftPos();
