@@ -38,12 +38,13 @@
     <param name="wheel_distance_left_right_in_m"       value="0.4"     />
 
 <!-- covariances -->
-    <param name="covariance_pos_x"       value="1.0"     />
-    <param name="covariance_pos_y"       value="1.0"     />
-    <param name="covariance_pos_yaw"     value="1.0"     />
-    <param name="covariance_vel_x"       value="1.0"     />
-    <param name="covariance_vel_y"       value="1.0"     />
-    <param name="covariance_vel_yaw"     value="1.0"     />
+<!-- s_x/y = 0.001 m, s_yaw = 0.1 deg, s_vx/vy = 0.001 m/s, s_vyaw = 0.1 deg/s -->
+    <param name="covariance_pos_x"       value="0.000001" />
+    <param name="covariance_pos_y"       value="0.000001" />
+    <param name="covariance_pos_yaw"     value="0.000003" />
+    <param name="covariance_vel_x"       value="0.000001" />
+    <param name="covariance_vel_y"       value="0.000001" />
+    <param name="covariance_vel_yaw"     value="0.000003" />
   </node>
 
 <!-- Motor Mapping drives: 0 = no_pos, 1=front_left, 2=front_right, 3=back_right, 4=back_left-->
