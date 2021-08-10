@@ -1,0 +1,27 @@
+<launch>
+
+  <arg name="move_base_cfg"       default="$(find evo_rd_platform_example)/params/move_base.yaml"/>
+  <arg name="costmap_common_cfg"  default="$(find evo_rd_platform_example)/params/costmap_common.yaml"/>
+  <arg name="costmap_local_cfg"   default="$(find evo_rd_platform_example)/params/costmap_local.yaml"/>
+  <arg name="costmap_global_cfg"  default="$(find evo_rd_platform_example)/params/costmap_global.yaml"/>
+  <arg name="planner_local_cfg"   default="$(find evo_rd_platform_example)/params/planner_local.yaml"/>
+  <arg name="planner_global_cfg"  default="$(find evo_rd_platform_example)/params/planner_global.yaml"/>
+
+  <arg name="cmd_vel_topic"       default="/cmd_vel/move_base"/>
+
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen" clear_params="true">
+  
+    <rosparam file="$(arg move_base_cfg)"       command="load" />
+    <rosparam file="$(arg costmap_common_cfg)"  command="load" ns="global_costmap" />
+    <rosparam file="$(arg costmap_common_cfg)"  command="load" ns="local_costmap" />   
+    <rosparam file="$(arg costmap_local_cfg)"   command="load" />   
+    <rosparam file="$(arg costmap_global_cfg)"  command="load" />
+    <rosparam file="$(arg planner_local_cfg)"   command="load" />   
+    <rosparam file="$(arg planner_global_cfg)"  command="load" />
+
+    <remap from="/cmd_vel" to="$(arg cmd_vel_topic)"/>
+
+  </node>
+
+</launch>
