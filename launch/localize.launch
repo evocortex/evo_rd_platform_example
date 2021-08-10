@@ -25,11 +25,10 @@
 
     <include file="$(find evo_rd_platform_example)/launch/tf_body_dimensions.launch" />
 
-    <include file="$(find evo_rd_platform_example)/launch/sick_tim561_back.launch" />
+    <!--include file="$(find evo_rd_platform_example)/launch/sick_tim561_back.launch" /-->
 
     <include file="$(find evo_rd_platform_example)/launch/sick_tim561_front.launch" />
 
     <node name="map_server" pkg="map_server" type="map_server" args="/home/nvidia/map.yaml" />
 
 </launch>
-

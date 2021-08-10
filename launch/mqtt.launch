@@ -1,0 +1,11 @@
+<launch>
+
+  <node pkg="evo_mqtt_bridge" type="base_footprint" respawn="true" name="mqtt_base_footprint" output="screen"/>
+  <node pkg="evo_mqtt_bridge" type="estop" respawn="true" name="mqtt_estop" output="screen"/>
+  <node pkg="evo_mqtt_bridge" type="map" respawn="true" name="mqtt_map" output="screen"/>
+  <node pkg="evo_mqtt_bridge" type="move_base" respawn="true" name="mqtt_move_base" output="screen"/>
+  <node pkg="evo_mqtt_bridge" type="robot_info" respawn="true" name="mqtt_robot_info" output="screen"/>
+  <node pkg="evo_mqtt_bridge" type="robot_state" respawn="true" name="mqtt_robot_state" output="screen"/>
+  <node pkg="evo_mqtt_bridge" type="teleop" respawn="true" name="mqtt_teleop" output="screen"/>
+
+</launch>
