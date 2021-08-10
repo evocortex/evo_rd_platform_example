@@ -2,8 +2,8 @@
 
     <arg name="cmd_vel_out" default="cmd_vel"/>
   
-    <arg name="topics_cfg" default="$(find evo_rd_platform_example)/launch/twist_mux_topics.yaml"/>
-    <arg name="locks_cfg"  default="$(find evo_rd_platform_example)/launch/twist_mux_locks.yaml"/>
+    <arg name="topics_cfg" default="$(find evo_rd_platform_example)/params/twist_mux_topics.yaml"/>
+    <arg name="locks_cfg"  default="$(find evo_rd_platform_example)/params/twist_mux_locks.yaml"/>
   
     <node pkg="twist_mux" type="twist_mux" name="twist_mux" output="screen">
       <remap from="cmd_vel_out" to="$(arg cmd_vel_out)"/>
