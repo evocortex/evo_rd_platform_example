@@ -1,0 +1,24 @@
+# Input topics handled/muxed.
+# For each topic:
+# - name    : name identifier to select the topic
+# - topic   : input topic of geometry_msgs::Twist type
+# - timeout : timeout in seconds to start discarding old messages, and use 0.0 speed instead
+# - priority: priority in the range [0, 255]; the higher the more priority over other topics
+
+topics:
+-
+  name    : mqtt
+  topic   : cmd_vel/mqtt
+  timeout : 0.2
+  priority: 110
+-
+  name    : joystick
+  topic   : cmd_vel/joy
+  timeout : 0.2
+  priority: 100
+-
+  name    : move_base
+  topic   : cmd_vel/move_base
+  timeout : 0.2
+  priority: 20
+  
