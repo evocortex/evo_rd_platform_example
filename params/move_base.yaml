@@ -1,0 +1,38 @@
+# Move base node parameters. For full documentation of the parameters in this file, please see
+#
+#  http://www.ros.org/wiki/move_base
+#
+
+base_global_planner: "global_planner/GlobalPlanner" 
+base_local_planner: "teb_local_planner/TebLocalPlannerROS"
+
+
+recovery_behaviors:
+  - name: 'level1_recovery' # clear costmaps (moderately)
+    type: 'clear_costmap_recovery/ClearCostmapRecovery'
+  - name: 'level2_recovery' # clear costmaps more aggressive
+    type: 'clear_costmap_recovery/ClearCostmapRecovery'
+
+
+level1_recovery:
+    reset_distance: 1.0
+    layer_names: ['obstacle_layer']
+
+level2_recovery:
+    reset_distance: 4.0
+    layer_names: ['obstacle_layer']
+
+
+recovery_behavior_enabled: true # default true
+clearing_rotation_allowed: false # was false - default true
+
+controller_frequency: 10.0 # default 20.0 cant be higher than lowest sensor frequency!
+controller_patience: 3.0 # default 15.0
+
+planner_frequency: 1.0 # default 0.0, last 1.0, global planning loop
+planner_patience: 5.0 # default 5.0
+
+shutdown_costmaps: false # default false
+
+oscillation_timeout: 5.0 # default 0.0
+oscillation_distance: 0.2 # default 0.5
