@@ -1,0 +1,8 @@
+# leaving the config file empty leads to a "FATAL" error
+# timeout 0.0 means the lock will not be used
+locks:
+-
+  name    : example
+  topic   : example
+  timeout : 0.0
+  priority: 0
