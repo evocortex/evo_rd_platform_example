@@ -64,7 +64,7 @@
     <param name="topic_pub_detailed" value="evo_tof/detailed"/>
 
 <!-- can interface -->
-    <param name="can_interface_name"   value="USBtin-ID-GOES-HERE" />
+    <param name="can_interface_name"   value="can0" /> <!-- CAN iface name: e.g. can0 or USBtin-A0215ABC --> 
 
     <param name="ToF_FoV_rad"       value="0.471239" />
     <param name="ToF_range_max_m"   value="4.0" />

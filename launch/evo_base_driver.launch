@@ -25,7 +25,7 @@
     <param name="enable_odom_tf"       value="true" />
 
 <!-- can interface -->
-    <param name="can_interface_name"   value="USBtin-A0215ABC" />
+    <param name="can_interface_name"   value="can0" /> <!-- CAN iface name: e.g. can0 or USBtin-A0215ABC --> 
 
 <!-- behaviour timeouts -->
     <param name="com_timeout_s"       value="0.1"     />
