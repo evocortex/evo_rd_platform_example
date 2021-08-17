@@ -4,7 +4,7 @@
   
     <node name="$(arg NodeName)" pkg="evo_rd_platform_example" type="dcdc_controller_node" output="screen" >
       <param name="loop_rate_hz"       value="10.0"      />
-      <param name="can_interface_name" value="USBtin-ID-GOES-HERE" />
+      <param name="can_interface_name" value="can0" /> <!-- CAN iface name: e.g. can0 or USBtin-A0215ABC --> 
       <param name="node_id"            value="10"        />
       <param name="elm_present"        value="1"         />      
     </node>
