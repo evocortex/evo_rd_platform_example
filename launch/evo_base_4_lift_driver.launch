@@ -33,7 +33,7 @@
 		<param name="enable_lift_control"		value="true" />
     <param name="debug_motor_mapping"   value="false"      />
     
-    <param name="wheel_radius_in_m"  		       value="0.05"      />
+    <param name="wheel_radius_in_m"  		       value="0.047"      />
     <param name="wheel_distance_front_back_in_m"       value="0.45"     />
     <param name="wheel_distance_left_right_in_m"       value="0.4"     />
 
@@ -66,8 +66,8 @@
     	<param name="kd" 		            value="0.0"    />
     	<param name="pwm_limit"         value="100.0"  />
      	<param name="rpm_limit"         value="200.0"  />
-    	<param name="gear_ratio"        value="22.4"  />
-    	<param name="encoder_res"       value="1024.0"  />
+    	<param name="gear_ratio"        value="29.333"  />
+    	<param name="encoder_res"       value="512.0"  />
       <param name="adc_conv"					value="0.0" />			
 			<param name="adc_offs"					value="0.0" />
     	<param name="motor_mapping"     value="3"  />
@@ -82,8 +82,8 @@
     	<param name="kd" 		            value="0.0"    />
     	<param name="pwm_limit"         value="100.0"  />
     	<param name="rpm_limit"         value="200.0"  />
-    	<param name="gear_ratio"        value="22.4"  />
-    	<param name="encoder_res"       value="1024.0"  />
+    	<param name="gear_ratio"        value="29.333"  />
+    	<param name="encoder_res"       value="512.0"  />
       <param name="adc_conv"					value="0.0" />			
 			<param name="adc_offs"					value="0.0" />
     	<param name="motor_mapping"     value="2"  />
@@ -104,8 +104,8 @@
     	<param name="kd" 		            value="0.0"    />
     	<param name="pwm_limit"         value="100.0"  />
     	<param name="rpm_limit"         value="200.0"  />
-    	<param name="gear_ratio"        value="22.4"  />
-    	<param name="encoder_res"       value="1024.0"  />
+    	<param name="gear_ratio"        value="29.333"  />
+    	<param name="encoder_res"       value="512.0"  />
       <param name="adc_conv"					value="0.0" />			
 			<param name="adc_offs"					value="0.0" />
     	<param name="motor_mapping"     value="4"  />
@@ -120,8 +120,8 @@
     	<param name="kd" 		            value="0.0"    />
     	<param name="pwm_limit"         value="100.0"  />
      	<param name="rpm_limit"         value="200.0"  />
-    	<param name="gear_ratio"        value="22.4"  />
-    	<param name="encoder_res"       value="1024.0"  />
+    	<param name="gear_ratio"        value="29.333"  />
+    	<param name="encoder_res"       value="512.0"  />
       <param name="adc_conv"					value="0.0" />			
 			<param name="adc_offs"					value="0.0" />
     	<param name="motor_mapping"     value="1"  />
